@@ -282,20 +282,52 @@ npm run create-sample-sendable-content # Criar conteúdo enviável de exemplo
 
 ## 🚀 Instalação em VPS
 
-### Instalação Automática
-```bash
-# Método 1: Script Shell (Recomendado)
-sudo chmod +x scripts/install-vps.sh
-sudo ./scripts/install-vps.sh
+### ⚡ Instalação Rápida via Git (Recomendado)
 
-# Método 2: Script Node.js Interativo
+#### Método 1: Um Comando
+```bash
+curl -fsSL https://raw.githubusercontent.com/brazucacloud/tsel/master/scripts/install-vps-git.sh | sudo bash
+```
+
+#### Método 2: Clone e Instale
+```bash
+# Clone o repositório
+git clone https://github.com/brazucacloud/tsel.git
+cd tsel
+
+# Execute a instalação
+sudo chmod +x scripts/install-vps-git.sh
+sudo ./scripts/install-vps-git.sh
+```
+
+#### Método 3: Instalação Interativa
+```bash
+# Clone o repositório
+git clone https://github.com/brazucacloud/tsel.git
+cd tsel
+
+# Execute instalação interativa
 sudo npm run install:vps
 ```
 
-### Documentação Completa
-Veja o guia completo de instalação em VPS: [docs/VPS_INSTALLATION.md](docs/VPS_INSTALLATION.md)
+### 📋 O que é instalado automaticamente:
+- ✅ Node.js 18, MongoDB 6.0, Redis, Nginx
+- ✅ Usuário de serviço e permissões
+- ✅ systemd service, firewall, monitoramento
+- ✅ Banco de dados inicializado
+- ✅ Backup automático diário
 
-### Requisitos da VPS
+### 🌐 Após a instalação:
+- **Frontend**: http://SEU-IP-DA-VPS
+- **API**: http://SEU-IP-DA-VPS:3001
+- **Login**: admin / admin123
+
+### 📚 Documentação Completa
+- [Instalação Rápida](docs/INSTALACAO_RAPIDA.md)
+- [Guia Completo VPS](docs/VPS_INSTALLATION.md)
+- [Instalação via Git](docs/VPS_INSTALLATION_GIT.md)
+
+### 🔧 Requisitos da VPS
 - Ubuntu 20.04+ ou Debian 11+
 - Mínimo 2GB RAM (recomendado 4GB+)
 - 20GB de espaço livre
