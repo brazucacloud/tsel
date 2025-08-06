@@ -1,6 +1,23 @@
 #!/usr/bin/env node
 
+const path = require('path');
+const fs = require('fs');
+
 console.log('🧪 Testando imports do sistema TSEL...');
+
+// Mudar para o diretório correto
+const INSTALL_DIR = '/opt/tsel';
+
+console.log(`📍 Mudando para diretório: ${INSTALL_DIR}`);
+
+if (!fs.existsSync(INSTALL_DIR)) {
+  console.error(`❌ Diretório não encontrado: ${INSTALL_DIR}`);
+  process.exit(1);
+}
+
+// Mudar para o diretório de instalação
+process.chdir(INSTALL_DIR);
+console.log(`✅ Diretório atual: ${process.cwd()}`);
 
 // Testar imports básicos
 try {
