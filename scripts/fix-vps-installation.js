@@ -162,13 +162,47 @@ const checkServices = () => {
   }
 };
 
+// Função para verificar se o diretório existe
+const checkInstallationDirectory = () => {
+  console.log(`🔍 Verificando diretório de instalação: ${INSTALL_DIR}`);
+  
+  if (!fs.existsSync(INSTALL_DIR)) {
+    console.error(`❌ Diretório de instalação não encontrado: ${INSTALL_DIR}`);
+    console.log('📋 Verificando se o repositório foi clonado...');
+    
+    // Verificar se existe algum diretório tsel
+    try {
+      const lsOutput = execSync('ls -la /opt/', { encoding: 'utf8' });
+      console.log('📁 Conteúdo de /opt/:');
+      console.log(lsOutput);
+    } catch (error) {
+      console.error('❌ Erro ao listar /opt/:', error.message);
+    }
+    
+    console.log('🚀 Tentando clonar o repositório...');
+    try {
+      execSync(`git clone https://github.com/brazucacloud/tsel.git ${INSTALL_DIR}`, { stdio: 'inherit' });
+      console.log('✅ Repositório clonado com sucesso');
+      return true;
+    } catch (error) {
+      console.error('❌ Erro ao clonar repositório:', error.message);
+      return false;
+    }
+  } else {
+    console.log('✅ Diretório de instalação encontrado');
+    return true;
+  }
+};
+
 // Função principal
 const main = async () => {
   console.log('🚀 Iniciando correção da instalação TSEL...');
+  console.log(`📍 Diretório atual: ${process.cwd()}`);
+  console.log(`🔍 Verificando se ${INSTALL_DIR} existe...`);
   
-  // Verificar se estamos no diretório correto
-  if (!fs.existsSync(INSTALL_DIR)) {
-    console.error(`❌ Diretório de instalação não encontrado: ${INSTALL_DIR}`);
+  // Verificar se o diretório existe
+  if (!checkInstallationDirectory()) {
+    console.error('❌ Não foi possível encontrar ou criar o diretório de instalação');
     process.exit(1);
   }
   
