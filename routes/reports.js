@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const Task = require('../models/Task');
 const Device = require('../models/Device');
 const moment = require('moment');
