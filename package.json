@@ -56,7 +56,8 @@
     "release:prod": "node scripts/create-release.js --production",
     "release:full": "node scripts/create-release.js --include-deps --production",
     "install:vps": "node scripts/install-vps.js",
-    "install:vps:auto": "chmod +x scripts/install-vps.sh && sudo ./scripts/install-vps.sh"
+    "install:vps:auto": "chmod +x scripts/install-vps.sh && sudo ./scripts/install-vps.sh",
+    "fix:vps": "node scripts/fix-vps-installation.js"
   },
   "keywords": [
     "chip-warmup",
