@@ -272,8 +272,6 @@ sendableContentSchema.statics.getStats = function() {
         total: { $sum: 1 },
         active: { $sum: { $cond: ['$isActive', 1, 0] } },
         approved: { $sum: { $cond: ['$isApproved', 1, 0] } },
-        byType: { $push: '$contentType' },
-        byCategory: { $push: '$category' },
         totalUsage: { $sum: '$usageCount' },
         avgSuccessRate: { $avg: '$successRate' }
       }
@@ -285,31 +283,7 @@ sendableContentSchema.statics.getStats = function() {
         active: 1,
         approved: 1,
         totalUsage: 1,
-        avgSuccessRate: { $round: ['$avgSuccessRate', 2] },
-        byType: {
-          $reduce: {
-            input: '$byType',
-            initialValue: {},
-            in: {
-              $mergeObjects: [
-                '$$value',
-                { $literal: { '$$this': { $add: [{ $ifNull: [{ $arrayElemAt: [{ $objectToArray: '$$value' }, 0] }, 0] }, 1 } } }
-              ]
-            }
-          }
-        },
-        byCategory: {
-          $reduce: {
-            input: '$byCategory',
-            initialValue: {},
-            in: {
-              $mergeObjects: [
-                '$$value',
-                { $literal: { '$$this': { $add: [{ $ifNull: [{ $arrayElemAt: [{ $objectToArray: '$$value' }, 0] }, 0] }, 1 } } }
-              ]
-            }
-          }
-        }
+        avgSuccessRate: { $round: ['$avgSuccessRate', 2] }
       }
     }
   ]);
