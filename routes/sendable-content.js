@@ -4,7 +4,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs').promises;
 const SendableContent = require('../models/SendableContent');
-const { authenticateToken } = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const { validateObjectId } = require('../middleware/validation');
 
 // Configure multer for file uploads
@@ -43,7 +43,7 @@ const upload = multer({
 });
 
 // Get all sendable content with filtering and pagination
-router.get('/', authenticateToken, async (req, res) => {
+router.get('/', auth, async (req, res) => {
   try {
     const {
       page = 1,
@@ -122,7 +122,7 @@ router.get('/', authenticateToken, async (req, res) => {
 });
 
 // Get sendable content by ID
-router.get('/:id', authenticateToken, validateObjectId, async (req, res) => {
+router.get('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id)
       .populate('createdBy', 'username email')
@@ -140,7 +140,7 @@ router.get('/:id', authenticateToken, validateObjectId, async (req, res) => {
 });
 
 // Create new sendable content
-router.post('/', authenticateToken, upload.single('media'), async (req, res) => {
+router.post('/', auth, upload.single('media'), async (req, res) => {
   try {
     const {
       title,
@@ -278,7 +278,7 @@ router.post('/', authenticateToken, upload.single('media'), async (req, res) => 
 });
 
 // Update sendable content
-router.put('/:id', authenticateToken, validateObjectId, upload.single('media'), async (req, res) => {
+router.put('/:id', auth, validateObjectId, upload.single('media'), async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id);
     if (!content) {
@@ -349,7 +349,7 @@ router.put('/:id', authenticateToken, validateObjectId, upload.single('media'), 
 });
 
 // Delete sendable content
-router.delete('/:id', authenticateToken, validateObjectId, async (req, res) => {
+router.delete('/:id', auth, validateObjectId, async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id);
     if (!content) {
@@ -378,7 +378,7 @@ router.delete('/:id', authenticateToken, validateObjectId, async (req, res) => {
 });
 
 // Approve content
-router.post('/:id/approve', authenticateToken, validateObjectId, async (req, res) => {
+router.post('/:id/approve', auth, validateObjectId, async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id);
     if (!content) {
@@ -439,7 +439,7 @@ router.get('/category/:category', async (req, res) => {
 });
 
 // Get content statistics
-router.get('/stats/overview', authenticateToken, async (req, res) => {
+router.get('/stats/overview', auth, async (req, res) => {
   try {
     const stats = await SendableContent.getStats();
     
@@ -462,7 +462,7 @@ router.get('/stats/overview', authenticateToken, async (req, res) => {
 });
 
 // Download media file
-router.get('/:id/download', authenticateToken, validateObjectId, async (req, res) => {
+router.get('/:id/download', auth, validateObjectId, async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id);
     if (!content) {
@@ -491,7 +491,7 @@ router.get('/:id/download', authenticateToken, validateObjectId, async (req, res
 });
 
 // Clone content
-router.post('/:id/clone', authenticateToken, validateObjectId, async (req, res) => {
+router.post('/:id/clone', auth, validateObjectId, async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id);
     if (!content) {
@@ -512,7 +512,7 @@ router.post('/:id/clone', authenticateToken, validateObjectId, async (req, res) 
 });
 
 // Bulk operations
-router.post('/bulk/approve', authenticateToken, async (req, res) => {
+router.post('/bulk/approve', auth, async (req, res) => {
   try {
     const { ids } = req.body;
     
@@ -541,7 +541,7 @@ router.post('/bulk/approve', authenticateToken, async (req, res) => {
   }
 });
 
-router.post('/bulk/delete', authenticateToken, async (req, res) => {
+router.post('/bulk/delete', auth, async (req, res) => {
   try {
     const { ids } = req.body;
     
