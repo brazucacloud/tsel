@@ -18,9 +18,16 @@ cd /opt/tsel
 echo "💾 Fazendo backup..."
 mkdir -p backup_$(date +%Y%m%d_%H%M%S)
 
+# Configurar Git para permitir o diretório
+echo "🔧 Configurando Git..."
+git config --global --add safe.directory /opt/tsel
+
+# Remover repositório Git existente
+echo "🗑️ Removendo repositório Git existente..."
+rm -rf .git
+
 # Forçar novo clone do repositório
 echo "📥 Forçando novo download do repositório..."
-rm -rf .git
 git init
 git remote add origin https://github.com/brazucacloud/tsel.git
 git fetch origin
