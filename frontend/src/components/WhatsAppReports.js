@@ -203,7 +203,7 @@ const WhatsAppReports = () => {
                   <option value="all">Todos os Status</option>
                   <option value="active">Ativos (>80%)</option>
                   <option value="warning">Atenção (50-80%)</option>
-                  <option value="error">Problemas (&lt;50%)</option>
+                  <option value="error">Problemas (menos de 50%)</option>
                 </select>
               </div>
 
