@@ -1,13 +1,13 @@
-# TSEL VPS Installation - SOLUÇÃO DEFINITIVA
+# TSEL VPS Installation - SOLUÇÃO DEFINITIVA COMPLETA
 
 ## 🚀 Instalação Completa em Um Comando
 
-Este é o método mais simples e definitivo para instalar o TSEL em sua VPS Ubuntu 24.04+.
+Este é o método mais simples e definitivo para instalar o TSEL em sua VPS Ubuntu 24.04+ com **FRONTEND MODERNO**, **BACKEND COMPLETO**, **REPOSITÓRIO DE APKs** e **DOCUMENTAÇÃO INTEGRADA**.
 
-### Comando Único de Instalação
+### Comando Único de Instalação COMPLETA
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/master/scripts/install-one-command.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/master/scripts/install-vps-complete.sh | sudo bash
 ```
 
 **Este comando irá:**
@@ -16,7 +16,35 @@ curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/master/scripts/ins
 - ✅ Instalar Redis e Nginx
 - ✅ Configurar todos os serviços
 - ✅ Instalar e configurar o TSEL
+- ✅ **Construir frontend moderno em React**
+- ✅ **Configurar repositório de APKs Android**
+- ✅ **Criar documentação completa integrada**
 - ✅ Resolver todos os problemas de dependências
+
+## 🌟 NOVAS FUNCIONALIDADES
+
+### 📱 Repositório de APKs Android
+- **Stable**: Versões estáveis para produção
+- **Beta**: Versões beta para testes
+- **Alpha**: Versões alpha para desenvolvimento
+- **Acesso via web**: `http://seu-ip-da-vps/apks/`
+
+### 📚 Documentação Integrada
+- **Guia de instalação**: `http://seu-ip-da-vps/docs/INSTALLATION_GUIDE.md`
+- **Documentação da API**: `http://seu-ip-da-vps/docs/API_DOCUMENTATION.md`
+- **Guia do APK Android**: `http://seu-ip-da-vps/docs/ANDROID_APK_GUIDE.md`
+
+### 🌐 Frontend Moderno
+- Interface web moderna em React
+- Dashboard administrativo completo
+- Monitoramento em tempo real
+- Gerenciamento de dispositivos e tarefas
+
+### 🔧 Backend Completo
+- API REST com todos os endpoints
+- WebSocket para comunicação em tempo real
+- Sistema de autenticação JWT
+- Geração automática de tarefas
 
 ## 🔧 Script de Correção Rápida
 
@@ -71,6 +99,16 @@ curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/master/scripts/ins
 - ❌ **Problema**: Imports falham
 - ✅ **Solução**: Teste e correção automática de todos os imports
 
+### Frontend e APKs
+- ❌ **Problema**: Frontend não construído
+- ✅ **Solução**: Build automático do React
+
+- ❌ **Problema**: Sem repositório de APKs
+- ✅ **Solução**: Criação automática do repositório
+
+- ❌ **Problema**: Sem documentação
+- ✅ **Solução**: Documentação completa integrada
+
 ## 📊 Verificação da Instalação
 
 Após a instalação, verifique se tudo está funcionando:
@@ -88,6 +126,15 @@ cd /opt/tsel && node scripts/test-imports.js
 
 # Verificar logs
 journalctl -u tsel -f
+
+# Verificar frontend
+curl http://localhost
+
+# Verificar APKs
+curl http://localhost/apks/
+
+# Verificar documentação
+curl http://localhost/docs/
 ```
 
 ## 🌐 Acesso ao Sistema
@@ -96,6 +143,8 @@ Após a instalação bem-sucedida:
 
 - **Frontend**: http://SEU-IP-DA-VPS
 - **API**: http://SEU-IP-DA-VPS:3001
+- **APKs**: http://SEU-IP-DA-VPS/apks/
+- **Documentação**: http://SEU-IP-DA-VPS/docs/
 - **Login**: admin / admin123
 
 ## 🔧 Comandos Úteis
@@ -118,6 +167,12 @@ df -h
 
 # Verificar uso de memória
 free -h
+
+# Verificar APKs
+ls -la /opt/tsel/uploads/apks/
+
+# Verificar documentação
+ls -la /opt/tsel/docs/
 ```
 
 ## 🚨 Troubleshooting
@@ -152,6 +207,25 @@ systemctl restart mongod
 journalctl -u mongod -f
 ```
 
+### Se o frontend não carregar:
+```bash
+# Verificar se foi construído
+ls -la /opt/tsel/frontend/build/
+
+# Reconstruir frontend
+cd /opt/tsel/frontend && npm run build
+```
+
+### Se os APKs não estiverem disponíveis:
+```bash
+# Verificar repositório
+ls -la /opt/tsel/uploads/apks/
+
+# Recriar repositório
+mkdir -p /opt/tsel/uploads/apks/{stable,beta,alpha}
+chown -R tsel:tsel /opt/tsel/uploads/apks/
+```
+
 ## 📈 Monitoramento
 
 O sistema inclui monitoramento automático:
@@ -165,6 +239,7 @@ O sistema inclui monitoramento automático:
 - Usuário de serviço dedicado (tsel)
 - Permissões restritas
 - Secrets gerados automaticamente
+- Headers de segurança no Nginx
 
 ## 📝 Relatório de Instalação
 
@@ -173,6 +248,12 @@ Após a instalação, um relatório completo é gerado em:
 
 ## 🎉 Sucesso!
 
-Com estes scripts, você terá uma instalação TSEL completamente funcional em sua VPS Ubuntu 24.04+ com todos os problemas de Node.js e npm resolvidos definitivamente.
+Com estes scripts, você terá uma instalação TSEL **COMPLETAMENTE FUNCIONAL** em sua VPS Ubuntu 24.04+ com:
 
-**Para suporte adicional, consulte os logs em `/opt/tsel/logs/`** 
+- ✅ **Frontend moderno** em React
+- ✅ **Backend completo** com todos os endpoints
+- ✅ **Repositório de APKs** Android organizado
+- ✅ **Documentação completa** integrada
+- ✅ **Todos os problemas de Node.js e npm resolvidos**
+
+**Para suporte adicional, consulte os logs em `/opt/tsel/logs/` e a documentação em `http://seu-ip-da-vps/docs/`** 
