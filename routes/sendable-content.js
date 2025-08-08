@@ -5,7 +5,7 @@ const path = require('path');
 const fs = require('fs').promises;
 const SendableContent = require('../models/SendableContent');
 const { auth } = require('../middleware/auth');
-// const { validateObjectId } = require('../middleware/validation');
+const { validateObjectId } = require('../middleware/validation');
 
 // Configure multer for file uploads
 const storage = multer.diskStorage({
