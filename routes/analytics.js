@@ -1543,4 +1543,146 @@ router.get('/number-detail/:phone', auth, async (req, res) => {
   }
 });
 
+// Dashboard analytics
+router.get('/dashboard', auth, async (req, res) => {
+  try {
+    const [
+      taskStats,
+      deviceStats,
+      recentTasks,
+      deviceStatus
+    ] = await Promise.all([
+      Task.getStats(),
+      Device.getStats(),
+      Task.find().sort({ createdAt: -1 }).limit(10),
+      Device.find().select('deviceId isOnline status lastSeen')
+    ]);
+
+    res.json({
+      success: true,
+      data: {
+        tasks: taskStats[0] || {},
+        devices: deviceStats[0] || {},
+        recentTasks,
+        deviceStatus
+      }
+    });
+  } catch (error) {
+    console.error('Erro ao buscar analytics do dashboard:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Task analytics
+router.get('/tasks', auth, async (req, res) => {
+  try {
+    const { period = '7d', deviceId } = req.query;
+    
+    const match = {};
+    if (deviceId) {
+      match.deviceId = deviceId;
+    }
+    
+    if (period) {
+      const days = parseInt(period.replace('d', ''));
+      match.createdAt = {
+        $gte: new Date(Date.now() - days * 24 * 60 * 60 * 1000)
+      };
+    }
+
+    const stats = await Task.aggregate([
+      { $match: match },
+      {
+        $group: {
+          _id: {
+            status: '$status',
+            type: '$type'
+          },
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Erro ao buscar analytics de tarefas:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Device analytics
+router.get('/devices', auth, async (req, res) => {
+  try {
+    const stats = await Device.aggregate([
+      {
+        $group: {
+          _id: '$status',
+          count: { $sum: 1 },
+          avgSuccessRate: { $avg: '$stats.successRate' }
+        }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: stats
+    });
+  } catch (error) {
+    console.error('Erro ao buscar analytics de dispositivos:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
+// Performance analytics
+router.get('/performance', auth, async (req, res) => {
+  try {
+    const { days = 7 } = req.query;
+    const startDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    const performance = await Task.aggregate([
+      {
+        $match: {
+          createdAt: { $gte: startDate },
+          status: { $in: ['completed', 'failed'] }
+        }
+      },
+      {
+        $group: {
+          _id: {
+            date: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+            status: '$status'
+          },
+          count: { $sum: 1 }
+        }
+      },
+      {
+        $sort: { '_id.date': 1 }
+      }
+    ]);
+
+    res.json({
+      success: true,
+      data: performance
+    });
+  } catch (error) {
+    console.error('Erro ao buscar analytics de performance:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Erro interno do servidor'
+    });
+  }
+});
+
 module.exports = router; 

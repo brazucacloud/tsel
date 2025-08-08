@@ -361,6 +361,22 @@ const validateSystemConfig = (req, res, next) => {
   next();
 };
 
+/**
+ * Validação para ObjectId do MongoDB
+ */
+const validateObjectId = (req, res, next) => {
+  const mongoose = require('mongoose');
+  
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({
+      success: false,
+      message: 'ID inválido'
+    });
+  }
+  
+  next();
+};
+
 module.exports = {
   validateDeviceAuth,
   validateAdminAuth,
@@ -370,5 +386,6 @@ module.exports = {
   validateQueryFilters,
   validateFileUpload,
   validateSystemConfig,
-  validateTaskParameters
+  validateTaskParameters,
+  validateObjectId
 }; 

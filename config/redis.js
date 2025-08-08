@@ -1,179 +1,159 @@
 const redis = require('redis');
 
-let redisClient = null;
+let client = null;
 
 const connectRedis = async () => {
   try {
-    redisClient = redis.createClient({
-      url: process.env.REDIS_URL || 'redis://localhost:6379',
-      socket: {
-        connectTimeout: 10000,
-        lazyConnect: true
+    const redisURL = process.env.REDIS_URL || 'redis://localhost:6379';
+    
+    client = redis.createClient({
+      url: redisURL,
+      retry_strategy: (options) => {
+        if (options.error && options.error.code === 'ECONNREFUSED') {
+          console.error('❌ Redis recusou conexão');
+          return new Error('Redis recusou conexão');
+        }
+        if (options.total_retry_time > 1000 * 60 * 60) {
+          console.error('❌ Tempo limite de reconexão Redis excedido');
+          return new Error('Tempo limite de reconexão excedido');
+        }
+        if (options.attempt > 10) {
+          console.error('❌ Máximo de tentativas de reconexão Redis excedido');
+          return undefined;
+        }
+        return Math.min(options.attempt * 100, 3000);
       }
     });
 
-    redisClient.on('error', (err) => {
+    client.on('error', (err) => {
       console.error('❌ Erro Redis:', err);
     });
 
-    redisClient.on('connect', () => {
-      console.log('✅ Redis conectado');
+    client.on('connect', () => {
+      console.log('✅ Conectado ao Redis');
     });
 
-    redisClient.on('ready', () => {
-      console.log('🚀 Redis pronto para uso');
+    client.on('ready', () => {
+      console.log('🚀 Redis pronto');
     });
 
-    redisClient.on('end', () => {
-      console.log('📴 Redis desconectado');
+    client.on('reconnecting', () => {
+      console.log('🔄 Reconectando ao Redis...');
     });
 
-    await redisClient.connect();
-    return redisClient;
+    client.on('end', () => {
+      console.log('📴 Conexão Redis fechada');
+    });
+
+    await client.connect();
+    return client;
   } catch (error) {
-    console.error('❌ Erro ao conectar Redis:', error);
-    // Não encerra o processo se Redis falhar
+    console.error('❌ Erro ao conectar ao Redis:', error);
     return null;
   }
 };
 
 const getRedisClient = () => {
-  return redisClient;
+  return client;
 };
 
-const setCache = async (key, value, ttl = 3600) => {
-  if (!redisClient) return false;
-  
-  try {
-    await redisClient.setEx(key, ttl, JSON.stringify(value));
-    return true;
-  } catch (error) {
-    console.error('Erro ao definir cache:', error);
-    return false;
-  }
-};
-
-const getCache = async (key) => {
-  if (!redisClient) return null;
-  
-  try {
-    const value = await redisClient.get(key);
-    return value ? JSON.parse(value) : null;
-  } catch (error) {
-    console.error('Erro ao obter cache:', error);
-    return null;
-  }
-};
-
-const deleteCache = async (key) => {
-  if (!redisClient) return false;
-  
-  try {
-    await redisClient.del(key);
-    return true;
-  } catch (error) {
-    console.error('Erro ao deletar cache:', error);
-    return false;
-  }
-};
-
-const clearCache = async (pattern = '*') => {
-  if (!redisClient) return false;
-  
-  try {
-    const keys = await redisClient.keys(pattern);
-    if (keys.length > 0) {
-      await redisClient.del(keys);
-    }
-    return true;
-  } catch (error) {
-    console.error('Erro ao limpar cache:', error);
-    return false;
-  }
-};
-
-const setSession = async (sessionId, data, ttl = 86400) => {
-  return setCache(`session:${sessionId}`, data, ttl);
-};
-
-const getSession = async (sessionId) => {
-  return getCache(`session:${sessionId}`);
-};
-
-const deleteSession = async (sessionId) => {
-  return deleteCache(`session:${sessionId}`);
-};
-
-const setDeviceStatus = async (deviceId, status, ttl = 300) => {
-  return setCache(`device:${deviceId}:status`, status, ttl);
-};
-
-const getDeviceStatus = async (deviceId) => {
-  return getCache(`device:${deviceId}:status`);
-};
-
-const setTaskProgress = async (taskId, progress, ttl = 3600) => {
-  return setCache(`task:${taskId}:progress`, progress, ttl);
-};
-
-const getTaskProgress = async (taskId) => {
-  return getCache(`task:${taskId}:progress`);
-};
-
-const incrementCounter = async (key, ttl = 86400) => {
-  if (!redisClient) return 0;
-  
-  try {
-    const value = await redisClient.incr(key);
-    if (value === 1) {
-      await redisClient.expire(key, ttl);
-    }
-    return value;
-  } catch (error) {
-    console.error('Erro ao incrementar contador:', error);
-    return 0;
-  }
-};
-
-const getCounter = async (key) => {
-  if (!redisClient) return 0;
-  
-  try {
-    const value = await redisClient.get(key);
-    return value ? parseInt(value) : 0;
-  } catch (error) {
-    console.error('Erro ao obter contador:', error);
-    return 0;
-  }
-};
-
-const closeRedis = async () => {
-  if (redisClient) {
-    await redisClient.quit();
+const disconnectRedis = async () => {
+  if (client) {
+    await client.quit();
+    client = null;
     console.log('📴 Conexão Redis fechada');
   }
 };
 
-// Graceful shutdown
-process.on('SIGINT', async () => {
-  await closeRedis();
-});
+const setKey = async (key, value, expireSeconds = null) => {
+  try {
+    if (!client) {
+      throw new Error('Cliente Redis não conectado');
+    }
+    
+    if (expireSeconds) {
+      await client.setEx(key, expireSeconds, JSON.stringify(value));
+    } else {
+      await client.set(key, JSON.stringify(value));
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Erro ao definir chave Redis:', error);
+    return false;
+  }
+};
+
+const getKey = async (key) => {
+  try {
+    if (!client) {
+      throw new Error('Cliente Redis não conectado');
+    }
+    
+    const value = await client.get(key);
+    return value ? JSON.parse(value) : null;
+  } catch (error) {
+    console.error('❌ Erro ao obter chave Redis:', error);
+    return null;
+  }
+};
+
+const deleteKey = async (key) => {
+  try {
+    if (!client) {
+      throw new Error('Cliente Redis não conectado');
+    }
+    
+    await client.del(key);
+    return true;
+  } catch (error) {
+    console.error('❌ Erro ao deletar chave Redis:', error);
+    return false;
+  }
+};
+
+const exists = async (key) => {
+  try {
+    if (!client) {
+      throw new Error('Cliente Redis não conectado');
+    }
+    
+    const result = await client.exists(key);
+    return result === 1;
+  } catch (error) {
+    console.error('❌ Erro ao verificar existência da chave Redis:', error);
+    return false;
+  }
+};
+
+const increment = async (key, amount = 1) => {
+  try {
+    if (!client) {
+      throw new Error('Cliente Redis não conectado');
+    }
+    
+    return await client.incrBy(key, amount);
+  } catch (error) {
+    console.error('❌ Erro ao incrementar chave Redis:', error);
+    return null;
+  }
+};
+
+const getConnectionStatus = () => {
+  return {
+    isConnected: client ? client.isReady : false,
+    client: client ? 'connected' : 'disconnected'
+  };
+};
 
 module.exports = {
   connectRedis,
   getRedisClient,
-  setCache,
-  getCache,
-  deleteCache,
-  clearCache,
-  setSession,
-  getSession,
-  deleteSession,
-  setDeviceStatus,
-  getDeviceStatus,
-  setTaskProgress,
-  getTaskProgress,
-  incrementCounter,
-  getCounter,
-  closeRedis
+  disconnectRedis,
+  setKey,
+  getKey,
+  deleteKey,
+  exists,
+  increment,
+  getConnectionStatus
 }; 

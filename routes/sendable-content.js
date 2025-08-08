@@ -122,7 +122,7 @@ router.get('/', auth, async (req, res) => {
 });
 
 // Get sendable content by ID
-router.get('/:id', auth, validateObjectId, async (req, res) => {
+router.get('/:id', auth, async (req, res) => {
   try {
     const content = await SendableContent.findById(req.params.id)
       .populate('createdBy', 'username email')

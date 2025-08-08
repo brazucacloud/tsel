@@ -2,27 +2,26 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const adminSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
   email: {
     type: String,
     required: true,
     unique: true,
     trim: true,
-    lowercase: true,
-    index: true
+    lowercase: true
   },
   password: {
     type: String,
     required: true,
     minlength: 6
   },
+  name: {
+    type: String,
+    required: true,
+    trim: true
+  },
   role: {
     type: String,
-    enum: ['admin', 'super_admin', 'operator'],
+    enum: ['admin', 'super_admin', 'moderator'],
     default: 'admin'
   },
   isActive: {
@@ -32,205 +31,58 @@ const adminSchema = new mongoose.Schema({
   lastLogin: {
     type: Date
   },
-  loginAttempts: {
-    type: Number,
-    default: 0
+  permissions: {
+    manageDevices: { type: Boolean, default: true },
+    manageTasks: { type: Boolean, default: true },
+    manageContent: { type: Boolean, default: true },
+    viewAnalytics: { type: Boolean, default: true },
+    manageUsers: { type: Boolean, default: false },
+    systemSettings: { type: Boolean, default: false }
   },
-  lockUntil: {
-    type: Date
-  },
-  permissions: [{
-    resource: {
-      type: String,
-      enum: [
-        'devices',
-        'tasks',
-        'analytics',
-        'admin',
-        'system',
-        'users'
-      ]
-    },
-    actions: [{
-      type: String,
-      enum: [
-        'create',
-        'read',
-        'update',
-        'delete',
-        'execute',
-        'export'
-      ]
-    }]
-  }],
-  preferences: {
-    theme: {
-      type: String,
-      enum: ['light', 'dark', 'auto'],
-      default: 'auto'
-    },
-    language: {
-      type: String,
-      default: 'pt-BR'
-    },
+  settings: {
     notifications: {
-      email: {
-        type: Boolean,
-        default: true
-      },
-      push: {
-        type: Boolean,
-        default: true
-      },
-      tasks: {
-        type: Boolean,
-        default: true
-      },
-      devices: {
-        type: Boolean,
-        default: true
-      }
+      email: { type: Boolean, default: true },
+      push: { type: Boolean, default: true }
     },
     dashboard: {
-      widgets: [{
-        type: String,
-        position: {
-          x: Number,
-          y: Number,
-          w: Number,
-          h: Number
-        },
-        config: mongoose.Schema.Types.Mixed
-      }]
+      defaultView: { type: String, default: 'overview' },
+      refreshInterval: { type: Number, default: 30000 }
     }
   },
-  apiKeys: [{
-    name: String,
-    key: String,
-    permissions: [String],
-    lastUsed: Date,
-    isActive: {
-      type: Boolean,
-      default: true
-    }
-  }],
-  sessions: [{
-    token: String,
-    device: String,
-    ip: String,
+  metadata: {
+    ipAddress: String,
     userAgent: String,
-    createdAt: {
-      type: Date,
-      default: Date.now
-    },
-    lastActivity: {
-      type: Date,
-      default: Date.now
-    },
-    isActive: {
-      type: Boolean,
-      default: true
-    }
-  }]
+    timezone: String,
+    language: String
+  }
 }, {
   timestamps: true
 });
 
-// Índices
+// Indexes
 adminSchema.index({ email: 1 });
 adminSchema.index({ role: 1 });
 adminSchema.index({ isActive: 1 });
-adminSchema.index({ 'sessions.token': 1 });
 
-// Métodos do modelo
-adminSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcrypt.compare(candidatePassword, this.password);
-};
+// Virtuals
+adminSchema.virtual('isSuperAdmin').get(function() {
+  return this.role === 'super_admin';
+});
 
-adminSchema.methods.hashPassword = async function() {
+adminSchema.virtual('displayName').get(function() {
+  return this.name || this.email.split('@')[0];
+});
+
+// Pre-save middleware
+adminSchema.pre('save', async function(next) {
+  // Hash password if modified
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 12);
   }
-  return this;
-};
+  next();
+});
 
-adminSchema.methods.updateLastLogin = function() {
-  this.lastLogin = new Date();
-  this.loginAttempts = 0;
-  this.lockUntil = null;
-  return this.save();
-};
-
-adminSchema.methods.incrementLoginAttempts = function() {
-  this.loginAttempts += 1;
-  
-  // Bloqueia após 5 tentativas por 15 minutos
-  if (this.loginAttempts >= 5) {
-    this.lockUntil = new Date(Date.now() + 15 * 60 * 1000);
-  }
-  
-  return this.save();
-};
-
-adminSchema.methods.isLocked = function() {
-  return !!(this.lockUntil && this.lockUntil > Date.now());
-};
-
-adminSchema.methods.hasPermission = function(resource, action) {
-  if (this.role === 'super_admin') return true;
-  
-  const permission = this.permissions.find(p => p.resource === resource);
-  if (!permission) return false;
-  
-  return permission.actions.includes(action);
-};
-
-adminSchema.methods.addSession = function(sessionData) {
-  this.sessions.push(sessionData);
-  
-  // Remove sessões antigas (mais de 30 dias)
-  const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  this.sessions = this.sessions.filter(session => 
-    session.createdAt > thirtyDaysAgo
-  );
-  
-  return this.save();
-};
-
-adminSchema.methods.removeSession = function(token) {
-  this.sessions = this.sessions.filter(session => session.token !== token);
-  return this.save();
-};
-
-adminSchema.methods.updateSessionActivity = function(token) {
-  const session = this.sessions.find(s => s.token === token);
-  if (session) {
-    session.lastActivity = new Date();
-  }
-  return this.save();
-};
-
-adminSchema.methods.generateApiKey = function(name, permissions = []) {
-  const crypto = require('crypto');
-  const key = crypto.randomBytes(32).toString('hex');
-  
-  this.apiKeys.push({
-    name,
-    key,
-    permissions,
-    lastUsed: null,
-    isActive: true
-  });
-  
-  return this.save().then(() => key);
-};
-
-adminSchema.methods.revokeApiKey = function(key) {
-  this.apiKeys = this.apiKeys.filter(apiKey => apiKey.key !== key);
-  return this.save();
-};
-
-// Métodos estáticos
+// Static methods
 adminSchema.statics.findByEmail = function(email) {
   return this.findOne({ email: email.toLowerCase() });
 };
@@ -239,95 +91,45 @@ adminSchema.statics.findActive = function() {
   return this.find({ isActive: true });
 };
 
-adminSchema.statics.findByRole = function(role) {
-  return this.find({ role });
+adminSchema.statics.getStats = function() {
+  return this.aggregate([
+    {
+      $group: {
+        _id: '$role',
+        count: { $sum: 1 },
+        active: { $sum: { $cond: ['$isActive', 1, 0] } }
+      }
+    }
+  ]);
 };
 
-adminSchema.statics.createDefaultAdmin = async function() {
-  const count = await this.countDocuments();
+// Instance methods
+adminSchema.methods.comparePassword = async function(candidatePassword) {
+  return bcrypt.compare(candidatePassword, this.password);
+};
+
+adminSchema.methods.updateLastLogin = function(metadata = {}) {
+  this.lastLogin = new Date();
   
-  if (count === 0) {
-    const defaultAdmin = new this({
-      name: 'Administrador',
-      email: process.env.ADMIN_EMAIL || 'admin@chipwarmup.com',
-      password: process.env.ADMIN_PASSWORD || 'admin123',
-      role: 'super_admin',
-      permissions: [
-        {
-          resource: 'devices',
-          actions: ['create', 'read', 'update', 'delete', 'execute', 'export']
-        },
-        {
-          resource: 'tasks',
-          actions: ['create', 'read', 'update', 'delete', 'execute', 'export']
-        },
-        {
-          resource: 'analytics',
-          actions: ['read', 'export']
-        },
-        {
-          resource: 'admin',
-          actions: ['create', 'read', 'update', 'delete']
-        },
-        {
-          resource: 'system',
-          actions: ['read', 'update']
-        },
-        {
-          resource: 'users',
-          actions: ['create', 'read', 'update', 'delete']
-        }
-      ]
-    });
-    
-    await defaultAdmin.hashPassword();
-    await defaultAdmin.save();
-    
-    console.log('Administrador padrão criado:', defaultAdmin.email);
-    return defaultAdmin;
+  if (metadata.ipAddress) {
+    this.metadata.ipAddress = metadata.ipAddress;
   }
+  
+  if (metadata.userAgent) {
+    this.metadata.userAgent = metadata.userAgent;
+  }
+  
+  return this.save();
 };
 
-// Middleware pre-save
-adminSchema.pre('save', async function(next) {
-  if (this.isModified('password')) {
-    await this.hashPassword();
-  }
-  next();
-});
+adminSchema.methods.hasPermission = function(permission) {
+  return this.permissions[permission] === true;
+};
 
-// Middleware pre-remove
-adminSchema.pre('remove', async function(next) {
-  // Remove todas as tarefas criadas por este admin
-  const Task = mongoose.model('Task');
-  await Task.deleteMany({ createdBy: this._id });
-  next();
-});
-
-// Virtual para verificar se é super admin
-adminSchema.virtual('isSuperAdmin').get(function() {
-  return this.role === 'super_admin';
-});
-
-// Configurar virtuals para JSON
-adminSchema.set('toJSON', { 
-  virtuals: true,
-  transform: function(doc, ret) {
-    delete ret.password;
-    delete ret.loginAttempts;
-    delete ret.lockUntil;
-    return ret;
-  }
-});
-
-adminSchema.set('toObject', { 
-  virtuals: true,
-  transform: function(doc, ret) {
-    delete ret.password;
-    delete ret.loginAttempts;
-    delete ret.lockUntil;
-    return ret;
-  }
-});
+adminSchema.methods.toJSON = function() {
+  const admin = this.toObject();
+  delete admin.password;
+  return admin;
+};
 
 module.exports = mongoose.model('Admin', adminSchema); 
