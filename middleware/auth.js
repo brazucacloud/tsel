@@ -92,9 +92,13 @@ const requirePermission = (permission) => {
   };
 };
 
+// Middleware específico para admin
+const adminAuth = requireRole(['admin', 'super_admin']);
+
 module.exports = {
   auth,
   optionalAuth,
   requireRole,
-  requirePermission
+  requirePermission,
+  adminAuth
 }; 
