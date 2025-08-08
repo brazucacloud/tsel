@@ -60,7 +60,7 @@ npm install -g npm@10.8.2
 
 # Configure npm
 echo "⚙️ Configurando npm..."
-npm config set production true
+npm config set omit dev
 npm config set audit false
 npm config set fund false
 npm config set update-notifier false
@@ -84,7 +84,7 @@ rm -rf node_modules package-lock.json
 
 # Install dependencies with specific flags
 echo "📦 Reinstalando dependências..."
-npm install --production --no-optional --no-audit --no-fund --silent
+npm install --omit=dev --no-optional --no-audit --no-fund --silent
 
 # Verify critical dependencies
 echo "🔍 Verificando dependências críticas..."
@@ -96,7 +96,7 @@ for dep in "${CRITICAL_DEPS[@]}"; do
     else
         echo "❌ $dep não foi instalado"
         echo "📦 Instalando $dep manualmente..."
-        npm install $dep --production --no-optional --silent
+        npm install $dep --omit=dev --no-optional --silent
     fi
 done
 
@@ -108,7 +108,7 @@ else
     echo "❌ moment não funciona"
     echo "📦 Reinstalando moment..."
     npm uninstall moment
-    npm install moment@2.29.4 --production --silent
+    npm install moment@2.29.4 --omit=dev --silent
 fi
 
 # Test all imports
@@ -120,11 +120,11 @@ else
     echo "📦 Tentando correção adicional..."
     
     # Try to fix specific issues
-    npm install express@4.18.2 --production --silent
-    npm install moment@2.29.4 --production --silent
-    npm install mongoose@8.0.3 --production --silent
-    npm install redis@4.6.10 --production --silent
-    npm install socket.io@4.7.4 --production --silent
+    npm install express@4.18.2 --omit=dev --silent
+    npm install moment@2.29.4 --omit=dev --silent
+    npm install mongoose@8.0.3 --omit=dev --silent
+    npm install redis@4.6.10 --omit=dev --silent
+    npm install socket.io@4.7.4 --omit=dev --silent
 fi
 
 # Fix permissions

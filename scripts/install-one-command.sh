@@ -55,7 +55,7 @@ cd tsel
 # Clean npm and install dependencies
 npm cache clean --force
 rm -rf node_modules package-lock.json
-npm install --production --no-optional --no-audit --no-fund --silent
+npm install --omit=dev --no-optional --no-audit --no-fund --silent
 
 # Create environment
 cp env.example .env
