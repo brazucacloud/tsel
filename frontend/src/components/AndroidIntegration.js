@@ -29,7 +29,6 @@ import {
   FaInfoCircle,
   FaArrowLeft,
   FaArrowRight,
-  FaSync,
   FaPowerOff,
   FaRegDotCircle
 } from 'react-icons/fa';
