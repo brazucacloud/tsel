@@ -26,7 +26,7 @@ import {
   FaSearch,
   FaEye,
   FaDownload,
-  FaRefresh
+  FaSync
 } from 'react-icons/fa';
 
 ChartJS.register(
@@ -234,7 +234,7 @@ const WhatsAppAnalytics = () => {
               onClick={fetchWhatsAppData}
               className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 flex items-center space-x-2"
             >
-              <FaRefresh />
+              <FaSync />
               <span>Atualizar</span>
             </button>
           </div>

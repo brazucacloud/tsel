@@ -29,7 +29,7 @@ import {
   FaInfoCircle,
   FaArrowLeft,
   FaArrowRight,
-  FaRefresh,
+  FaSync,
   FaPowerOff,
   FaRegDotCircle
 } from 'react-icons/fa';
@@ -225,7 +225,7 @@ const AndroidIntegration = () => {
                 onClick={fetchDevices}
                 className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2"
               >
-                <FaRefresh />
+                <FaSync />
                 <span>Atualizar</span>
               </button>
             </div>
