@@ -142,7 +142,7 @@ success "npm atualizado para $(npm --version)"
 
 # Configure npm for production
 log "⚙️ Configurando npm..."
-npm config set production true
+npm config set omit dev
 npm config set audit false
 npm config set fund false
 npm config set update-notifier false
@@ -260,7 +260,7 @@ fi
 
 # Install backend dependencies
 log "📦 Instalando dependências do backend..."
-npm install --production --no-optional --no-audit --no-fund --silent
+npm install --omit=dev --no-optional --no-audit --no-fund --silent
 
 # Verify critical dependencies
 log "🔍 Verificando dependências críticas..."
@@ -272,7 +272,7 @@ for dep in "${CRITICAL_DEPS[@]}"; do
     else
         error "$dep não foi instalado"
         log "📦 Tentando instalar $dep manualmente..."
-        npm install $dep --production --no-optional --silent
+        npm install $dep --omit=dev --no-optional --silent
     fi
 done
 
@@ -284,7 +284,7 @@ else
     error "moment não funciona"
     log "📦 Reinstalando moment..."
     npm uninstall moment
-    npm install moment@2.29.4 --production --silent
+    npm install moment@2.29.4 --omit=dev --silent
 fi
 
 success "Backend instalado"
