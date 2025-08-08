@@ -25,7 +25,7 @@ apt remove --purge -y nodejs npm node || true
 apt autoremove -y
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt install -y nodejs
-npm install -g npm@latest
+npm install -g npm@10.8.2
 
 # Clean and install MongoDB 7.0
 apt remove --purge -y mongodb-org* mongodb* || true

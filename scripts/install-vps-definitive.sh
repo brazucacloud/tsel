@@ -135,9 +135,9 @@ NPM_VERSION_INSTALLED=$(npm --version)
 success "Node.js $NODE_VERSION_INSTALLED instalado"
 success "npm $NPM_VERSION_INSTALLED instalado"
 
-# Update npm to latest version
-log "🔄 Atualizando npm para versão mais recente..."
-npm install -g npm@$NPM_VERSION
+# Update npm to compatible version
+log "🔄 Atualizando npm para versão compatível..."
+npm install -g npm@10.8.2
 success "npm atualizado para $(npm --version)"
 
 # Configure npm for production

@@ -54,9 +54,9 @@ echo "📦 Instalando Node.js 18..."
 curl -fsSL https://deb.nodesource.com/setup_18.x | bash -
 apt install -y nodejs
 
-# Update npm
+# Update npm to compatible version
 echo "🔄 Atualizando npm..."
-npm install -g npm@latest
+npm install -g npm@10.8.2
 
 # Configure npm
 echo "⚙️ Configurando npm..."
