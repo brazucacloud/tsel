@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Instalador Universal - Chip Warmup API
-# Uma linha de comando: curl -sSL https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
-# ou: wget -qO- https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
+# Uma linha de comando: curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
+# ou: wget -qO- https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
 
 set -e
 

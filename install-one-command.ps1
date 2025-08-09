@@ -1,6 +1,6 @@
 # Instalador Universal - Chip Warmup API (PowerShell)
-# Uma linha de comando: Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
-# ou: iex (iwr "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
+# Uma linha de comando: Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
+# ou: iex (iwr "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
 
 param(
     [switch]$SkipDocker,

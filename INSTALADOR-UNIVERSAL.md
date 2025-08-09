@@ -12,17 +12,17 @@ Instaladores em uma linha de comando que funcionam em **Windows**, **Linux** e *
 
 ### Linux/macOS
 ```bash
-curl -sSL https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
+curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
 ```
 
 ### Windows (PowerShell)
 ```powershell
-Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
+Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
 ```
 
 ### Windows (Command Prompt)
 ```cmd
-powershell -Command "Invoke-Expression (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1' -UseBasicParsing).Content"
+powershell -Command "Invoke-Expression (Invoke-WebRequest -Uri 'https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1' -UseBasicParsing).Content"
 ```
 
 ### Node.js (Universal)

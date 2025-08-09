@@ -4,12 +4,12 @@
 
 ### Linux/macOS
 ```bash
-curl -sSL https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
+curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
 ```
 
 ### Windows
 ```powershell
-iex (iwr "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
+iex (iwr "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
 ```
 
 ### Universal (Node.js)

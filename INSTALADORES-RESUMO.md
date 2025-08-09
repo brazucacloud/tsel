@@ -14,19 +14,19 @@ node install-universal.js
 ### 2. **Instalador Shell (Linux/macOS)**
 ```bash
 # Download e execução direta
-curl -sSL https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
+curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
 
 # Ou baixar e executar
-wget -qO- https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
+wget -qO- https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
 ```
 
 ### 3. **Instalador PowerShell (Windows)**
 ```powershell
 # Download e execução direta
-Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
+Invoke-Expression (Invoke-WebRequest -Uri "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
 
 # Versão abreviada
-iex (iwr "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
+iex (iwr "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
 ```
 
 ### 4. **Instalador via npm**
@@ -38,12 +38,12 @@ npm run install:universal
 
 ### Linux/macOS
 ```bash
-curl -sSL https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.sh | bash
+curl -sSL https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.sh | bash
 ```
 
 ### Windows
 ```powershell
-iex (iwr "https://raw.githubusercontent.com/seu-repo/TSEL/main/install-one-command.ps1" -UseBasicParsing).Content
+iex (iwr "https://raw.githubusercontent.com/brazucacloud/tsel/main/install-one-command.ps1" -UseBasicParsing).Content
 ```
 
 ### Universal (Node.js)
