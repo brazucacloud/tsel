@@ -1,4 +1,8 @@
 import React, { useState } from 'react';
+import Analytics from './components/Analytics';
+import SystemSettings from './components/SystemSettings';
+import NotificationSystem from './components/NotificationSystem';
+import AdvancedReports from './components/AdvancedReports';
 import {
   Box,
   CssBaseline,
@@ -209,6 +213,18 @@ const menuItems = [
     badge: null
   },
   {
+    text: 'Notificações',
+    icon: <NotificationsIcon />,
+    component: 'notifications',
+    badge: '4'
+  },
+  {
+    text: 'Relatórios',
+    icon: <AssessmentIcon />,
+    component: 'reports',
+    badge: null
+  },
+  {
     text: 'Configurações',
     icon: <SettingsIcon />,
     component: 'settings',
@@ -233,27 +249,13 @@ function App() {
       case 'android-control':
         return <AndroidControl />;
       case 'analytics':
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>
-              Analytics
-            </Typography>
-            <Typography variant="body1">
-              Componente de Analytics em desenvolvimento...
-            </Typography>
-          </Box>
-        );
+        return <Analytics />;
       case 'settings':
-        return (
-          <Box sx={{ p: 3 }}>
-            <Typography variant="h4" gutterBottom>
-              Configurações
-            </Typography>
-            <Typography variant="body1">
-              Componente de Configurações em desenvolvimento...
-            </Typography>
-          </Box>
-        );
+        return <SystemSettings />;
+      case 'notifications':
+        return <NotificationSystem />;
+      case 'reports':
+        return <AdvancedReports />;
       default:
         return <Dashboard />;
     }

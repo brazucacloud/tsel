@@ -53,6 +53,8 @@ app.use('/api/reports', require('./routes/reports'));
 app.use('/api/content', require('./routes/content'));
 app.use('/api/sendable-content', require('./routes/sendable-content'));
 app.use('/api/android', require('./routes/android'));
+app.use('/api/settings', require('./routes/settings'));
+app.use('/api/notifications', require('./routes/notifications'));
 
 // WebSocket para comunicação em tempo real
 io.on('connection', (socket) => {
@@ -91,7 +93,10 @@ app.get('/', (req, res) => {
       tasks: '/api/tasks',
       devices: '/api/devices',
       analytics: '/api/analytics',
-      admin: '/api/admin'
+      admin: '/api/admin',
+      reports: '/api/reports',
+      settings: '/api/settings',
+      notifications: '/api/notifications'
     },
     documentation: '/api/docs'
   });

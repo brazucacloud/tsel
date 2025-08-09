@@ -111,7 +111,7 @@ git config --global credential.helper store
 
 # Clonar repositório
 cd /home/tsel
-git clone https://github.com/seu-usuario/tsel.git
+git clone https://github.com/brazucacloud/tsel.git
 cd tsel
 git checkout main
 

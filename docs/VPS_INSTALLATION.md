@@ -29,7 +29,7 @@ ssh root@seu-ip-da-vps
 
 2. **Clone o repositório TSEL**
 ```bash
-git clone https://github.com/seu-usuario/tsel.git
+git clone https://github.com/brazucacloud/tsel.git
 cd tsel
 ```
 
