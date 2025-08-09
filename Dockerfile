@@ -15,21 +15,19 @@ RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
        python3 make g++ git ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
-# Copiar package.json e package-lock.json
-COPY package*.json ./
+# Copiar package.json e package-lock.json com owner correto
+COPY --chown=node:node package*.json ./
 
-# Instalar dependências somente de produção (usa npm install para evitar erro de lock desatualizado)
+# Ajustar permissões antes e instalar dependências somente de produção
+RUN chown -R node:node /app
+USER node
 RUN npm install --omit=dev
 
-# Copiar código da aplicação
-COPY . .
+# Copiar código da aplicação com owner correto
+COPY --chown=node:node . .
 
 # Criar diretórios necessários
 RUN mkdir -p uploads logs backups
-
-# Definir permissões
-RUN chown -R node:node /app
-USER node
 
 # Expor porta
 EXPOSE 3000
