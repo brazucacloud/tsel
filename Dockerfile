@@ -18,8 +18,8 @@ RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
 # Copiar package.json e package-lock.json
 COPY package*.json ./
 
-# Instalar dependências somente de produção
-RUN npm ci --omit=dev
+# Instalar dependências somente de produção (usa npm install para evitar erro de lock desatualizado)
+RUN npm install --omit=dev
 
 # Copiar código da aplicação
 COPY . .
