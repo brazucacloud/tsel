@@ -1,12 +1,12 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const Settings = require('../models/Settings');
 
 // GET /api/settings - Obter todas as configurações
 router.get('/', auth, async (req, res) => {
   try {
-    const settings = await Settings.findOne({ userId: req.user.id });
+    const settings = await Settings.findOne({ userId: req.admin.id });
     res.json(settings || {});
   } catch (error) {
     console.error('Erro ao buscar configurações:', error);
@@ -18,7 +18,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/:section', auth, async (req, res) => {
   try {
     const { section } = req.params;
-    const settings = await Settings.findOne({ userId: req.user.id });
+    const settings = await Settings.findOne({ userId: req.admin.id });
     
     if (!settings || !settings[section]) {
       return res.status(404).json({ message: 'Seção não encontrada' });
@@ -36,11 +36,11 @@ router.put('/', auth, async (req, res) => {
   try {
     const { general, security, performance, backup, network, api } = req.body;
     
-    let settings = await Settings.findOne({ userId: req.user.id });
+    let settings = await Settings.findOne({ userId: req.admin.id });
     
     if (!settings) {
       settings = new Settings({
-        userId: req.user.id,
+        userId: req.admin.id,
         general: general || {},
         security: security || {},
         performance: performance || {},
@@ -72,11 +72,11 @@ router.put('/:section', auth, async (req, res) => {
     const { section } = req.params;
     const sectionData = req.body;
     
-    let settings = await Settings.findOne({ userId: req.user.id });
+    let settings = await Settings.findOne({ userId: req.admin.id });
     
     if (!settings) {
       settings = new Settings({
-        userId: req.user.id,
+        userId: req.admin.id,
         [section]: sectionData
       });
     } else {
@@ -95,7 +95,7 @@ router.put('/:section', auth, async (req, res) => {
 // POST /api/settings/backup - Fazer backup das configurações
 router.post('/backup', auth, async (req, res) => {
   try {
-    const settings = await Settings.findOne({ userId: req.user.id });
+    const settings = await Settings.findOne({ userId: req.admin.id });
     
     if (!settings) {
       return res.status(404).json({ message: 'Nenhuma configuração encontrada' });
@@ -104,7 +104,7 @@ router.post('/backup', auth, async (req, res) => {
     // Simular processo de backup
     const backupData = {
       timestamp: new Date(),
-      userId: req.user.id,
+      userId: req.admin.id,
       settings: settings.toObject(),
       version: '1.0'
     };
@@ -184,11 +184,11 @@ router.post('/reset', auth, async (req, res) => {
       }
     };
     
-    let settings = await Settings.findOne({ userId: req.user.id });
+    let settings = await Settings.findOne({ userId: req.admin.id });
     
     if (!settings) {
       settings = new Settings({
-        userId: req.user.id,
+        userId: req.admin.id,
         ...defaultSettings
       });
     } else {
@@ -207,7 +207,7 @@ router.post('/reset', auth, async (req, res) => {
 // GET /api/settings/validate - Validar configurações
 router.get('/validate', auth, async (req, res) => {
   try {
-    const settings = await Settings.findOne({ userId: req.user.id });
+    const settings = await Settings.findOne({ userId: req.admin.id });
     
     if (!settings) {
       return res.json({ valid: true, message: 'Configurações padrão serão aplicadas' });
