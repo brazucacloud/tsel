@@ -1,8 +1,7 @@
 services:
   app:
     build: .
-    ports:
-      - "3000:3000"
+    # Porta interna 3000 acessível via Nginx; sem bind no host para evitar conflito
     environment:
       - NODE_ENV=production
       - PORT=3000
