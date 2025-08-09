@@ -1,20 +1,25 @@
-FROM node:18-alpine
+FROM node:18-bookworm-slim
+
+ENV NODE_ENV=production
 
 # Criar diretório da aplicação
 WORKDIR /app
 
-# Instalar dependências do sistema
-RUN apk add --no-cache \
+# Instalar dependências do sistema (Debian/Ubuntu)
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
     python3 \
     make \
     g++ \
-    git
+    git \
+    ca-certificates \
+  && rm -rf /var/lib/apt/lists/*
 
 # Copiar package.json e package-lock.json
 COPY package*.json ./
 
-# Instalar dependências
-RUN npm ci --only=production
+# Instalar dependências somente de produção
+RUN npm ci --omit=dev
 
 # Copiar código da aplicação
 COPY . .
