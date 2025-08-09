@@ -7,7 +7,17 @@ const Device = require('../models/Device');
 
 // Middleware
 const { auth } = require('../middleware/auth');
-const { validateTask } = require('../middleware/validation');
+// Validação mínima para criação de tarefa (evita callback undefined)
+const validateTask = (req, res, next) => {
+  const { deviceId, type } = req.body;
+  if (!deviceId || !type) {
+    return res.status(400).json({
+      success: false,
+      message: 'Campos obrigatórios ausentes: deviceId e type'
+    });
+  }
+  next();
+};
 
 /**
  * @route GET /api/tasks
