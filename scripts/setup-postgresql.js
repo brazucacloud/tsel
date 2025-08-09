@@ -2,7 +2,16 @@ const { Pool } = require('pg');
 const fs = require('fs');
 const path = require('path');
 
-// Configuração do PostgreSQL
+// Configuração do PostgreSQL para conexão inicial (como postgres)
+const adminConfig = {
+  user: 'postgres',
+  host: process.env.POSTGRES_HOST || 'localhost',
+  database: 'postgres', // Conectar ao banco padrão primeiro
+  password: '', // Sem senha para postgres local
+  port: process.env.POSTGRES_PORT || 5432
+};
+
+// Configuração do PostgreSQL para o usuário tsel_user
 const config = {
   user: process.env.POSTGRES_USER || 'tsel_user',
   host: process.env.POSTGRES_HOST || 'localhost',
@@ -155,39 +164,86 @@ ON CONFLICT (key) DO NOTHING;
 `;
 
 async function setupPostgreSQL() {
-  const pool = new Pool(config);
+  let adminPool = null;
+  let userPool = null;
   
   try {
     console.log('🚀 Configurando PostgreSQL para TSEL...');
     
-    // Testar conexão
-    const client = await pool.connect();
+    // Primeiro, conectar como postgres para criar banco e usuário
+    console.log('🔧 Configurando banco e usuário...');
+    adminPool = new Pool(adminConfig);
+    const adminClient = await adminPool.connect();
+    
+    try {
+      // Criar banco de dados se não existir
+      await adminClient.query(`
+        SELECT 'CREATE DATABASE tsel_db'
+        WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tsel_db')\gexec
+      `);
+      
+      // Criar usuário se não existir
+      await adminClient.query(`
+        DO \$\$
+        BEGIN
+          IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'tsel_user') THEN
+            CREATE USER tsel_user WITH PASSWORD 'tsel_password';
+          END IF;
+        END
+        \$\$;
+      `);
+      
+      // Conceder permissões
+      await adminClient.query(`
+        GRANT ALL PRIVILEGES ON DATABASE tsel_db TO tsel_user;
+        ALTER USER tsel_user CREATEDB;
+      `);
+      
+    } finally {
+      adminClient.release();
+    }
+    
+    // Agora conectar como tsel_user
     console.log('✅ Conectado ao PostgreSQL');
+    userPool = new Pool(config);
+    const userClient = await userPool.connect();
     
-    // Criar tabelas
-    console.log('📋 Criando tabelas...');
-    await client.query(createTablesSQL);
-    console.log('✅ Tabelas criadas com sucesso');
-    
-    // Inserir dados iniciais
-    console.log('📝 Inserindo dados iniciais...');
-    await client.query(insertInitialDataSQL);
-    console.log('✅ Dados iniciais inseridos');
-    
-    // Verificar tabelas criadas
-    const tablesResult = await client.query(`
-      SELECT table_name 
-      FROM information_schema.tables 
-      WHERE table_schema = 'public' 
-      ORDER BY table_name
-    `);
-    
-    console.log('📊 Tabelas criadas:');
-    tablesResult.rows.forEach(row => {
-      console.log(`   - ${row.table_name}`);
-    });
-    
-    client.release();
+    try {
+      // Configurar permissões no schema public
+      await userClient.query(`
+        GRANT ALL ON SCHEMA public TO tsel_user;
+        GRANT CREATE ON SCHEMA public TO tsel_user;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO tsel_user;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO tsel_user;
+        ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO tsel_user;
+      `);
+      
+      // Criar tabelas
+      console.log('📋 Criando tabelas...');
+      await userClient.query(createTablesSQL);
+      console.log('✅ Tabelas criadas com sucesso');
+      
+      // Inserir dados iniciais
+      console.log('📝 Inserindo dados iniciais...');
+      await userClient.query(insertInitialDataSQL);
+      console.log('✅ Dados iniciais inseridos');
+      
+      // Verificar tabelas criadas
+      const tablesResult = await userClient.query(`
+        SELECT table_name 
+        FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        ORDER BY table_name
+      `);
+      
+      console.log('📊 Tabelas criadas:');
+      tablesResult.rows.forEach(row => {
+        console.log(`   - ${row.table_name}`);
+      });
+      
+    } finally {
+      userClient.release();
+    }
     
     console.log('🎉 PostgreSQL configurado com sucesso!');
     console.log('📋 Próximos passos:');
@@ -198,9 +254,17 @@ async function setupPostgreSQL() {
     
   } catch (error) {
     console.error('❌ Erro ao configurar PostgreSQL:', error);
+    
+    // Se for erro de permissão, sugerir executar o script de correção
+    if (error.code === '42501') {
+      console.log('\n🔧 Para corrigir permissões, execute:');
+      console.log('sudo bash scripts/fix-postgresql-permissions.sh');
+    }
+    
     process.exit(1);
   } finally {
-    await pool.end();
+    if (adminPool) await adminPool.end();
+    if (userPool) await userPool.end();
   }
 }
 
