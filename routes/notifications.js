@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const Notification = require('../models/Notification');
 
 // GET /api/notifications - Obter todas as notificações do usuário
@@ -8,7 +8,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const { page = 1, limit = 20, read, category, priority, search } = req.query;
     
-    const filter = { userId: req.user.id };
+    const filter = { userId: req.admin.id };
     
     if (read !== undefined) {
       filter.read = read === 'true';
@@ -54,7 +54,7 @@ router.get('/', auth, async (req, res) => {
 router.get('/unread', auth, async (req, res) => {
   try {
     const notifications = await Notification.find({
-      userId: req.user.id,
+      userId: req.admin.id,
       read: false
     }).sort({ timestamp: -1 });
     
@@ -70,7 +70,7 @@ router.get('/count', auth, async (req, res) => {
   try {
     const { read, category, priority } = req.query;
     
-    const filter = { userId: req.user.id };
+    const filter = { userId: req.admin.id };
     
     if (read !== undefined) {
       filter.read = read === 'true';
@@ -98,7 +98,7 @@ router.get('/:id', auth, async (req, res) => {
   try {
     const notification = await Notification.findOne({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.admin.id
     });
     
     if (!notification) {
@@ -127,7 +127,7 @@ router.post('/', auth, async (req, res) => {
     } = req.body;
     
     const notification = new Notification({
-      userId: req.user.id,
+      userId: req.admin.id,
       title,
       message,
       type,
@@ -143,7 +143,7 @@ router.post('/', auth, async (req, res) => {
     
     // Emitir evento de notificação em tempo real (se usando Socket.io)
     if (req.app.get('io')) {
-      req.app.get('io').to(req.user.id).emit('notification', notification);
+      req.app.get('io').to(req.admin.id).emit('notification', notification);
     }
     
     res.status(201).json(notification);
@@ -164,7 +164,7 @@ router.put('/:id', auth, async (req, res) => {
     } = req.body;
     
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.admin.id },
       { $set: { read, starred, pinned, archived } },
       { new: true }
     );
@@ -184,7 +184,7 @@ router.put('/:id', auth, async (req, res) => {
 router.put('/:id/read', auth, async (req, res) => {
   try {
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.admin.id },
       { $set: { read: true } },
       { new: true }
     );
@@ -204,7 +204,7 @@ router.put('/:id/read', auth, async (req, res) => {
 router.put('/read-all', auth, async (req, res) => {
   try {
     const result = await Notification.updateMany(
-      { userId: req.user.id, read: false },
+      { userId: req.admin.id, read: false },
       { $set: { read: true } }
     );
     
@@ -218,10 +218,7 @@ router.put('/read-all', auth, async (req, res) => {
 // PUT /api/notifications/:id/star - Alternar favorito da notificação
 router.put('/:id/star', auth, async (req, res) => {
   try {
-    const notification = await Notification.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
+    const notification = await Notification.findOne({ _id: req.params.id, userId: req.admin.id });
     
     if (!notification) {
       return res.status(404).json({ message: 'Notificação não encontrada' });
@@ -240,10 +237,7 @@ router.put('/:id/star', auth, async (req, res) => {
 // PUT /api/notifications/:id/pin - Alternar pin da notificação
 router.put('/:id/pin', auth, async (req, res) => {
   try {
-    const notification = await Notification.findOne({
-      _id: req.params.id,
-      userId: req.user.id
-    });
+    const notification = await Notification.findOne({ _id: req.params.id, userId: req.admin.id });
     
     if (!notification) {
       return res.status(404).json({ message: 'Notificação não encontrada' });
@@ -263,7 +257,7 @@ router.put('/:id/pin', auth, async (req, res) => {
 router.put('/:id/archive', auth, async (req, res) => {
   try {
     const notification = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.admin.id },
       { $set: { archived: true } },
       { new: true }
     );
@@ -282,10 +276,7 @@ router.put('/:id/archive', auth, async (req, res) => {
 // DELETE /api/notifications/:id - Excluir notificação
 router.delete('/:id', auth, async (req, res) => {
   try {
-    const notification = await Notification.findOneAndDelete({
-      _id: req.params.id,
-      userId: req.user.id
-    });
+    const notification = await Notification.findOneAndDelete({ _id: req.params.id, userId: req.admin.id });
     
     if (!notification) {
       return res.status(404).json({ message: 'Notificação não encontrada' });
@@ -303,7 +294,7 @@ router.delete('/', auth, async (req, res) => {
   try {
     const { ids, read, category, priority } = req.body;
     
-    let filter = { userId: req.user.id };
+    let filter = { userId: req.admin.id };
     
     if (ids && ids.length > 0) {
       filter._id = { $in: ids };
@@ -326,7 +317,7 @@ router.delete('/', auth, async (req, res) => {
 router.get('/stats', auth, async (req, res) => {
   try {
     const stats = await Notification.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.admin.id } },
       {
         $group: {
           _id: null,
@@ -340,7 +331,7 @@ router.get('/stats', auth, async (req, res) => {
     ]);
     
     const categoryStats = await Notification.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.admin.id } },
       {
         $group: {
           _id: '$category',
@@ -350,7 +341,7 @@ router.get('/stats', auth, async (req, res) => {
     ]);
     
     const priorityStats = await Notification.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.admin.id } },
       {
         $group: {
           _id: '$priority',
@@ -381,7 +372,7 @@ router.post('/bulk', auth, async (req, res) => {
     
     const notificationsToCreate = notifications.map(notification => ({
       ...notification,
-      userId: req.user.id,
+      userId: req.admin.id,
       timestamp: new Date()
     }));
     
@@ -390,7 +381,7 @@ router.post('/bulk', auth, async (req, res) => {
     // Emitir eventos de notificação em tempo real
     if (req.app.get('io')) {
       createdNotifications.forEach(notification => {
-        req.app.get('io').to(req.user.id).emit('notification', notification);
+        req.app.get('io').to(req.admin.id).emit('notification', notification);
       });
     }
     
@@ -405,7 +396,7 @@ router.post('/bulk', auth, async (req, res) => {
 router.post('/test', auth, async (req, res) => {
   try {
     const testNotification = new Notification({
-      userId: req.user.id,
+      userId: req.admin.id,
       title: 'Notificação de Teste',
       message: 'Esta é uma notificação de teste enviada em ' + new Date().toLocaleString(),
       type: 'info',
@@ -419,7 +410,7 @@ router.post('/test', auth, async (req, res) => {
     
     // Emitir evento de notificação em tempo real
     if (req.app.get('io')) {
-      req.app.get('io').to(req.user.id).emit('notification', testNotification);
+      req.app.get('io').to(req.admin.id).emit('notification', testNotification);
     }
     
     res.json({ message: 'Notificação de teste enviada', notification: testNotification });
