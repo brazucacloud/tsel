@@ -1,5 +1,13 @@
-const { connectDB } = require('./config/database');
-const { connectRedis } = require('./config/redis');
+// Tolerância a diferentes formatos de export (function default ou named export)
+const databaseModule = require('./config/database');
+const connectDB = typeof databaseModule === 'function'
+  ? databaseModule
+  : databaseModule.connectDB;
+
+const redisModule = require('./config/redis');
+const connectRedis = typeof redisModule === 'function'
+  ? redisModule
+  : redisModule.connectRedis;
 const Admin = require('./models/Admin');
 const cron = require('node-cron');
 
