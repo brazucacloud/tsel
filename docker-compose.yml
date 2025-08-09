@@ -30,7 +30,6 @@ services:
       - MONGO_INITDB_DATABASE=chip-warmup
     volumes:
       - mongo_data:/data/db
-      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
     restart: unless-stopped
     networks:
       - chip-warmup-network
