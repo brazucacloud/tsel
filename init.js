@@ -1,4 +1,4 @@
-const connectDB = require('./config/database');
+const { connectDB } = require('./config/database');
 const { connectRedis } = require('./config/redis');
 const Admin = require('./models/Admin');
 const cron = require('node-cron');
