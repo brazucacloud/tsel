@@ -6,13 +6,13 @@ ENV NODE_ENV=production
 WORKDIR /app
 
 # Instalar dependências do sistema (Debian/Ubuntu)
-RUN apt-get update \
+# Evitar DNS/IPv6 issues e falhas de mirror em redes com MTU menor
+ENV APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+RUN echo 'Acquire::ForceIPv4 "true";' > /etc/apt/apt.conf.d/99force-ipv4 \
+  && echo 'APT::Acquire::Retries "5";' > /etc/apt/apt.conf.d/80retries \
+  && apt-get update \
   && apt-get install -y --no-install-recommends \
-    python3 \
-    make \
-    g++ \
-    git \
-    ca-certificates \
+       python3 make g++ git ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 
 # Copiar package.json e package-lock.json

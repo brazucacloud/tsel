@@ -68,4 +68,6 @@ volumes:
 
 networks:
   chip-warmup-network:
-    driver: bridge 
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: "1442"
