@@ -136,7 +136,9 @@ function checkDocker() {
             logSuccess(`Docker ${version} encontrado`);
             
             if (commandExists('docker-compose') || commandExists('docker compose')) {
-                const composeVersion = execSync('docker-compose --version', { encoding: 'utf8' }).trim();
+                const composeVersion = executeCommand('docker-compose --version', process.cwd(), true)
+                  ? execSync('docker-compose --version', { encoding: 'utf8' }).trim()
+                  : execSync('docker compose version', { encoding: 'utf8' }).trim();
                 logSuccess(`Docker Compose ${composeVersion} encontrado`);
                 return true;
             } else {
@@ -151,6 +153,18 @@ function checkDocker() {
         logWarning('Docker não encontrado');
         return false;
     }
+}
+
+// Instalar Docker automaticamente (Linux)
+function installDockerIfMissing() {
+    if (!IS_LINUX) return false;
+    logInfo('Tentando instalar Docker automaticamente (Linux)...');
+    if (!executeCommand('curl -fsSL https://get.docker.com | sh')) {
+        logWarning('Falha ao instalar Docker automaticamente. Prossiga sem Docker ou instale manualmente.');
+        return false;
+    }
+    executeCommand('sudo systemctl enable --now docker', process.cwd(), true);
+    return checkDocker();
 }
 
 // Instalar dependências do backend
@@ -249,7 +263,9 @@ async function setupDatabase() {
 async function startWithDocker() {
     logInfo('🐳 Iniciando com Docker...');
     
-    if (executeCommand('docker-compose up -d')) {
+    // Suportar docker compose plugin
+    const upCmd = commandExists('docker-compose') ? 'docker-compose up -d' : 'docker compose up -d';
+    if (executeCommand(upCmd)) {
         logSuccess('Serviços iniciados com Docker!');
         log('');
         log('🌐 Aplicação disponível em:', 'green');
@@ -259,9 +275,12 @@ async function startWithDocker() {
         log('   - Redis: localhost:6379', 'cyan');
         log('');
         log('📋 Comandos úteis:', 'green');
-        log('   - docker-compose logs -f    (ver logs)', 'cyan');
-        log('   - docker-compose down       (parar serviços)', 'cyan');
-        log('   - docker-compose restart    (reiniciar)', 'cyan');
+        const logsCmd = commandExists('docker-compose') ? 'docker-compose logs -f' : 'docker compose logs -f';
+        const downCmd = commandExists('docker-compose') ? 'docker-compose down' : 'docker compose down';
+        const restartCmd = commandExists('docker-compose') ? 'docker-compose restart' : 'docker compose restart';
+        log(`   - ${logsCmd}    (ver logs)`, 'cyan');
+        log(`   - ${downCmd}       (parar serviços)`, 'cyan');
+        log(`   - ${restartCmd}    (reiniciar)`, 'cyan');
         return true;
     } else {
         logError('Falha ao iniciar com Docker');
@@ -280,8 +299,8 @@ async function startWithoutDocker() {
         logInfo('Iniciando aplicação...');
         log('');
         log('🌐 Aplicação estará disponível em:', 'green');
-        log('   - Frontend: http://localhost:3001', 'cyan');
-        log('   - API: http://localhost:3000', 'cyan');
+        log('   - Frontend: http://localhost:3000', 'cyan');
+        log('   - API: http://localhost:3001', 'cyan');
         log('');
         log('📋 Para iniciar manualmente:', 'green');
         log('   npm run dev:full', 'cyan');
@@ -308,7 +327,13 @@ async function main() {
         process.exit(1);
     }
     
-    const dockerAvailable = checkDocker();
+    let dockerAvailable = checkDocker();
+    if (!dockerAvailable && IS_LINUX) {
+        const installDocker = await question('Docker não encontrado. Deseja instalar automaticamente? (s/n): ');
+        if (installDocker.toLowerCase().match(/^[sy]/)) {
+            dockerAvailable = installDockerIfMissing();
+        }
+    }
     
     log('');
     log('📦 Instalando dependências...', 'bright');

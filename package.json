@@ -25,7 +25,7 @@
     "create-sample-content": "node scripts/create-sample-content.js",
     "create-sample-sendable-content": "node scripts/create-sample-sendable-content.js",
     "setup": "node scripts/setup.js",
-    "dev:full": "concurrently \"npm run dev\" \"cd frontend && npm start\"",
+    "dev:full": "concurrently \"cross-env PORT=3001 npm run dev\" \"cd frontend && npm start\"",
     "frontend": "cd frontend && npm start",
     "frontend:build": "cd frontend && npm run build",
     "frontend:install": "cd frontend && npm install",
@@ -95,6 +95,7 @@
   },
       "devDependencies": {
       "nodemon": "^3.0.2",
+      "cross-env": "^7.0.3",
       "jest": "^29.7.0",
       "supertest": "^6.3.3",
       "eslint": "^8.55.0",
