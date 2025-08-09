@@ -130,27 +130,35 @@ function checkNpmVersion() {
 
 // Verificar Docker
 function checkDocker() {
-    if (commandExists('docker')) {
+    if (!commandExists('docker')) {
+        logWarning('Docker não encontrado');
+        return false;
+    }
+    try {
+        const version = execSync('docker --version', { encoding: 'utf8' }).trim();
+        logSuccess(`Docker ${version} encontrado`);
+        // Detectar compose clássico ou plugin
+        let composeOk = false;
         try {
-            const version = execSync('docker --version', { encoding: 'utf8' }).trim();
-            logSuccess(`Docker ${version} encontrado`);
-            
-            if (commandExists('docker-compose') || commandExists('docker compose')) {
-                const composeVersion = executeCommand('docker-compose --version', process.cwd(), true)
-                  ? execSync('docker-compose --version', { encoding: 'utf8' }).trim()
-                  : execSync('docker compose version', { encoding: 'utf8' }).trim();
-                logSuccess(`Docker Compose ${composeVersion} encontrado`);
-                return true;
-            } else {
-                logWarning('Docker Compose não encontrado');
-                return false;
+            const v = execSync('docker-compose --version', { encoding: 'utf8' }).trim();
+            logSuccess(`Docker Compose ${v} encontrado`);
+            composeOk = true;
+        } catch (_) {
+            try {
+                const v2 = execSync('docker compose version', { encoding: 'utf8' }).trim();
+                logSuccess(`Docker Compose (plugin) ${v2} encontrado`);
+                composeOk = true;
+            } catch (__) {
+                // ignore
             }
-        } catch (error) {
-            logWarning('Docker encontrado mas não está funcionando');
+        }
+        if (!composeOk) {
+            logWarning('Docker Compose não encontrado');
             return false;
         }
-    } else {
-        logWarning('Docker não encontrado');
+        return true;
+    } catch (error) {
+        logWarning('Docker encontrado mas não está funcionando');
         return false;
     }
 }
