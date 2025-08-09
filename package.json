@@ -1,7 +1,7 @@
 {
   "name": "chip-warmup-api",
   "version": "1.0.0",
-  "description": "Sistema completo de aquecimento de chip com API para clientes Android",
+  "description": "Sistema completo de aquecimento de chip com API para clientes Android - PostgreSQL Edition",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -13,7 +13,7 @@
     "install:quick": "node scripts/install-dependencies.js",
     "install:universal": "node install-universal.js",
     "install:test": "node test-installation.js",
-    "setup:db": "node scripts/setup-database.js",
+    "setup:db": "node scripts/setup-postgresql.js",
     "setup:full": "npm run install:quick && npm run setup:db",
     "test": "jest",
     "test:api": "node test-api.js",
@@ -60,13 +60,15 @@
     "release:full": "node scripts/create-release.js --include-deps --production",
     "install:vps": "node scripts/install-vps.js",
     "install:vps:auto": "chmod +x scripts/install-vps.sh && sudo ./scripts/install-vps.sh",
-    "fix:vps": "node scripts/fix-vps-installation.js"
+    "fix:vps": "node scripts/fix-vps-installation.js",
+    "migrate:postgres": "node scripts/setup-postgresql.js"
   },
   "keywords": [
     "chip-warmup",
     "android-api",
     "task-management",
-    "automation"
+    "automation",
+    "postgresql"
   ],
   "author": "Chip Warmup Team",
   "license": "MIT",
@@ -81,7 +83,7 @@
     "dotenv": "^16.3.1",
     "bcryptjs": "^2.4.3",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.0.3",
+    "pg": "^8.11.3",
     "redis": "^4.6.10",
     "socket.io": "^4.7.4",
     "multer": "^1.4.5-lts.1",
@@ -96,44 +98,15 @@
     "axios": "^1.6.2",
     "node-cron": "^3.0.3"
   },
-      "devDependencies": {
-      "nodemon": "^3.0.2",
-      "cross-env": "^7.0.3",
-      "jest": "^29.7.0",
-      "supertest": "^6.3.3",
-      "eslint": "^8.55.0",
-      "prettier": "^3.1.0",
-      "concurrently": "^8.2.2",
-      "archiver": "^6.0.1",
-      "tar": "^7.0.1",
-      "pkg": "^5.8.1"
-    },
+  "devDependencies": {
+    "nodemon": "^3.0.2",
+    "concurrently": "^8.2.2",
+    "cross-env": "^7.0.3",
+    "jest": "^29.7.0",
+    "eslint": "^8.56.0"
+  },
   "engines": {
     "node": ">=18.0.0",
     "npm": ">=8.0.0"
-  },
-  "bin": {
-    "chip-warmup": "./install.js"
-  },
-  "pkg": {
-    "assets": [
-      "config/**/*",
-      "middleware/**/*",
-      "models/**/*",
-      "routes/**/*",
-      "scripts/**/*",
-      "frontend/build/**/*",
-      "env.example",
-      "install.bat",
-      "install.sh",
-      "install.ps1",
-      "install.js"
-    ],
-    "targets": [
-      "node18-win-x64",
-      "node18-linux-x64",
-      "node18-macos-x64"
-    ],
-    "outputPath": "dist"
   }
 } 
