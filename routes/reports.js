@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const auth = require('../middleware/auth');
+const { auth } = require('../middleware/auth');
 const ReportTemplate = require('../models/ReportTemplate');
 const ReportData = require('../models/ReportData');
 const fs = require('fs').promises;
@@ -12,7 +12,7 @@ const csv = require('csv-writer').createObjectCsvWriter;
 // GET /api/reports/templates - Obter todos os templates de relatório
 router.get('/templates', auth, async (req, res) => {
   try {
-    const templates = await ReportTemplate.find({ userId: req.user.id }).sort({ createdAt: -1 });
+    const templates = await ReportTemplate.find({ userId: req.admin.id }).sort({ createdAt: -1 });
     res.json(templates);
   } catch (error) {
     console.error('Erro ao buscar templates:', error);
@@ -25,7 +25,7 @@ router.get('/templates/:id', auth, async (req, res) => {
   try {
     const template = await ReportTemplate.findOne({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.admin.id
     });
     
     if (!template) {
@@ -53,7 +53,7 @@ router.post('/templates', auth, async (req, res) => {
     } = req.body;
     
     const template = new ReportTemplate({
-      userId: req.user.id,
+      userId: req.admin.id,
       name,
       description,
       category,
@@ -76,7 +76,7 @@ router.post('/templates', auth, async (req, res) => {
 router.put('/templates/:id', auth, async (req, res) => {
   try {
     const template = await ReportTemplate.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
+      { _id: req.params.id, userId: req.admin.id },
       req.body,
       { new: true }
     );
@@ -97,7 +97,7 @@ router.delete('/templates/:id', auth, async (req, res) => {
   try {
     const template = await ReportTemplate.findOneAndDelete({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.admin.id
     });
     
     if (!template) {
@@ -116,7 +116,7 @@ router.get('/', auth, async (req, res) => {
   try {
     const { page = 1, limit = 20, status, format, templateId } = req.query;
     
-    const filter = { userId: req.user.id };
+    const filter = { userId: req.admin.id };
     
     if (status && status !== 'all') {
       filter.status = status;
@@ -156,7 +156,7 @@ router.get('/:id', auth, async (req, res) => {
   try {
     const report = await ReportData.findOne({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.admin.id
     }).populate('templateId');
     
     if (!report) {
@@ -177,7 +177,7 @@ router.post('/generate', auth, async (req, res) => {
     
     const template = await ReportTemplate.findOne({
       _id: templateId,
-      userId: req.user.id
+      userId: req.admin.id
     });
     
     if (!template) {
@@ -186,14 +186,14 @@ router.post('/generate', auth, async (req, res) => {
     
     // Criar registro do relatório
     const report = new ReportData({
-      userId: req.user.id,
+      userId: req.admin.id,
       templateId: template._id,
       name: `${template.name} - ${new Date().toLocaleDateString()}`,
       status: 'processing',
       format: format || template.format,
       parameters,
       metadata: {
-        generatedBy: req.user.id,
+        generatedBy: req.admin.id,
         version: '1.0',
         options
       }
@@ -216,7 +216,7 @@ router.get('/:id/download', auth, async (req, res) => {
   try {
     const report = await ReportData.findOne({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.admin.id
     });
     
     if (!report) {
@@ -248,7 +248,7 @@ router.delete('/:id', auth, async (req, res) => {
   try {
     const report = await ReportData.findOne({
       _id: req.params.id,
-      userId: req.user.id
+      userId: req.admin.id
     });
     
     if (!report) {
@@ -278,7 +278,7 @@ router.delete('/:id', auth, async (req, res) => {
 router.get('/stats', auth, async (req, res) => {
   try {
     const stats = await ReportData.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.admin.id } },
       {
         $group: {
           _id: null,
@@ -291,7 +291,7 @@ router.get('/stats', auth, async (req, res) => {
     ]);
     
     const formatStats = await ReportData.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.admin.id } },
       {
         $group: {
           _id: '$format',
@@ -301,7 +301,7 @@ router.get('/stats', auth, async (req, res) => {
     ]);
     
     const categoryStats = await ReportData.aggregate([
-      { $match: { userId: req.user.id } },
+      { $match: { userId: req.admin.id } },
       {
         $lookup: {
           from: 'reporttemplates',
@@ -345,7 +345,7 @@ router.post('/export/whatsapp', auth, async (req, res) => {
     
     // Criar relatório de exportação
     const report = new ReportData({
-      userId: req.user.id,
+      userId: req.admin.id,
       name: `Exportação WhatsApp - ${new Date().toLocaleDateString()}`,
       status: 'processing',
       format,
