@@ -138,12 +138,6 @@ BEGIN
     RETURN NEW;
 END;
 $$ language 'plpgsql';
-
-CREATE TRIGGER IF NOT EXISTS update_devices_updated_at BEFORE UPDATE ON devices FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_tasks_updated_at BEFORE UPDATE ON tasks FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_users_updated_at BEFORE UPDATE ON users FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_content_updated_at BEFORE UPDATE ON content FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
-CREATE TRIGGER IF NOT EXISTS update_settings_updated_at BEFORE UPDATE ON settings FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
 `;
 
 // SQL para inserir dados iniciais
@@ -162,6 +156,33 @@ INSERT INTO settings (key, value, description) VALUES
 ('notification_enabled', 'true', 'Notificações habilitadas')
 ON CONFLICT (key) DO NOTHING;
 `;
+
+// Função para criar trigger se não existir
+const createTriggerIfNotExists = async (client, triggerName, tableName) => {
+  try {
+    // Verificar se o trigger já existe
+    const triggerExists = await client.query(`
+      SELECT 1 FROM pg_trigger 
+      WHERE tgname = $1 AND tgrelid = (
+        SELECT oid FROM pg_class WHERE relname = $2
+      )
+    `, [triggerName, tableName]);
+    
+    if (triggerExists.rows.length === 0) {
+      // Criar o trigger se não existir
+      await client.query(`
+        CREATE TRIGGER ${triggerName} 
+        BEFORE UPDATE ON ${tableName} 
+        FOR EACH ROW EXECUTE FUNCTION update_updated_at_column()
+      `);
+      console.log(`   ✅ Trigger ${triggerName} criado`);
+    } else {
+      console.log(`   ⏭️  Trigger ${triggerName} já existe`);
+    }
+  } catch (error) {
+    console.log(`   ⚠️  Erro ao criar trigger ${triggerName}:`, error.message);
+  }
+};
 
 async function setupPostgreSQL() {
   console.log('🚀 Configurando PostgreSQL para TSEL...');
@@ -287,6 +308,15 @@ async function setupPostgreSQL() {
       console.log('📋 Criando tabelas...');
       await userClient.query(createTablesSQL);
       console.log('✅ Tabelas criadas com sucesso');
+      
+      // Criar triggers individualmente
+      console.log('🔧 Criando triggers...');
+      await createTriggerIfNotExists(userClient, 'update_devices_updated_at', 'devices');
+      await createTriggerIfNotExists(userClient, 'update_tasks_updated_at', 'tasks');
+      await createTriggerIfNotExists(userClient, 'update_users_updated_at', 'users');
+      await createTriggerIfNotExists(userClient, 'update_content_updated_at', 'content');
+      await createTriggerIfNotExists(userClient, 'update_settings_updated_at', 'settings');
+      console.log('✅ Triggers configurados');
       
       // Inserir dados iniciais
       console.log('📝 Inserindo dados iniciais...');
