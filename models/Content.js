@@ -1,383 +1,380 @@
-const mongoose = require('mongoose');
-const moment = require('moment');
+const { query, getClient } = require('../config/database');
 
-const contentSchema = new mongoose.Schema({
-  // Identificação básica
-  contentId: {
-    type: String,
-    required: true,
-    unique: true,
-    default: () => `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
-  },
-  
-  // Relacionamentos
-  taskId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Task',
-    required: true
-  },
-  
-  deviceId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Device',
-    required: true
-  },
-  
-  whatsappNumber: {
-    type: String,
-    required: true,
-    index: true
-  },
-  
-  // Tipo de conteúdo
-  contentType: {
-    type: String,
-    required: true,
-    enum: ['audio', 'video', 'image', 'document', 'message', 'call', 'status', 'profile'],
-    index: true
-  },
-  
-  // Ação específica
-  action: {
-    type: String,
-    required: true,
-    enum: [
-      'send', 'receive', 'upload', 'download', 'record', 'play',
-      'audio_call', 'video_call', 'receive_audio_call', 'receive_video_call',
-      'send_message', 'receive_message', 'send_media', 'receive_media',
-      'update_status', 'update_profile', 'view_story', 'react_to_message'
-    ]
-  },
-  
-  // Metadados do arquivo
-  fileName: {
-    type: String,
-    required: true
-  },
-  
-  originalName: {
-    type: String
-  },
-  
-  filePath: {
-    type: String,
-    required: true
-  },
-  
-  fileSize: {
-    type: Number, // em bytes
-    required: true
-  },
-  
-  mimeType: {
-    type: String,
-    required: true
-  },
-  
-  fileExtension: {
-    type: String
-  },
-  
-  // Dimensões para imagens/vídeos
-  dimensions: {
-    width: Number,
-    height: Number
-  },
-  
-  // Duração para áudio/vídeo
-  duration: {
-    type: Number, // em segundos
-    default: 0
-  },
-  
-  // Conteúdo da mensagem (se aplicável)
-  messageContent: {
-    type: String,
-    maxlength: 1000
-  },
-  
-  // Metadados específicos por tipo
-  metadata: {
-    // Para chamadas
-    callType: {
-      type: String,
-      enum: ['audio', 'video', 'group']
-    },
-    callDuration: Number,
-    participants: [String],
-    
-    // Para documentos
-    documentType: {
-      type: String,
-      enum: ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'txt', 'zip', 'rar']
-    },
-    
-    // Para status
-    statusType: {
-      type: String,
-      enum: ['text', 'image', 'video']
-    },
-    
-    // Para reações
-    reactionType: {
-      type: String,
-      enum: ['like', 'love', 'haha', 'wow', 'sad', 'angry', 'care']
-    },
-    
-    // Para grupos
-    groupName: String,
-    groupId: String,
-    
-    // Para contatos
-    contactName: String,
-    contactNumber: String,
-    
-    // Para localização
-    location: {
-      latitude: Number,
-      longitude: Number,
-      address: String
-    },
-    
-    // Para stickers
-    stickerPack: String,
-    stickerId: String,
-    
-    // Para GIFs
-    gifSource: String,
-    gifId: String,
-    
-    // Para encaminhamentos
-    forwardedFrom: String,
-    forwardedAt: Date,
-    
-    // Para respostas
-    replyTo: {
-      messageId: String,
-      content: String
-    },
-    
-    // Para hashtags e menções
-    hashtags: [String],
-    mentions: [String],
-    
-    // Para links
-    links: [{
-      url: String,
-      title: String,
-      description: String,
-      thumbnail: String
-    }]
-  },
-  
-  // Status do processamento
-  processingStatus: {
-    type: String,
-    enum: ['pending', 'processing', 'completed', 'failed', 'deleted'],
-    default: 'pending',
-    index: true
-  },
-  
-  // Hash para verificação de integridade
-  fileHash: {
-    type: String
-  },
-  
-  // Tags para organização
-  tags: [{
-    type: String,
-    index: true
-  }],
-  
-  // Classificação de conteúdo
-  contentRating: {
-    type: String,
-    enum: ['safe', 'sensitive', 'inappropriate', 'spam'],
-    default: 'safe'
-  },
-  
-  // Informações de privacidade
-  isPrivate: {
-    type: Boolean,
-    default: false
-  },
-  
-  // Controles de acesso
-  accessLevel: {
-    type: String,
-    enum: ['public', 'private', 'admin_only', 'device_only'],
-    default: 'device_only'
-  },
-  
-  // Estatísticas de uso
-  usageStats: {
-    views: {
-      type: Number,
-      default: 0
-    },
-    downloads: {
-      type: Number,
-      default: 0
-    },
-    shares: {
-      type: Number,
-      default: 0
+class Content {
+  static async findById(id) {
+    try {
+      const result = await query(
+        'SELECT * FROM content WHERE id = $1',
+        [id]
+      );
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar content por ID:', error);
+      throw error;
     }
-  },
-  
-  // Informações de backup
-  backupInfo: {
-    backedUp: {
-      type: Boolean,
-      default: false
-    },
-    backupDate: Date,
-    backupLocation: String,
-    backupSize: Number
-  },
-  
-  // Timestamps
-  createdAt: {
-    type: Date,
-    default: Date.now,
-    index: true
-  },
-  
-  updatedAt: {
-    type: Date,
-    default: Date.now
-  },
-  
-  deletedAt: {
-    type: Date
   }
-}, {
-  timestamps: true,
-  toJSON: { virtuals: true },
-  toObject: { virtuals: true }
-});
 
-// Índices para performance
-contentSchema.index({ deviceId: 1, createdAt: -1 });
-contentSchema.index({ whatsappNumber: 1, contentType: 1 });
-contentSchema.index({ taskId: 1, processingStatus: 1 });
-contentSchema.index({ 'metadata.callType': 1, createdAt: -1 });
-contentSchema.index({ tags: 1, createdAt: -1 });
+  static async findOne(conditions) {
+    try {
+      let sql = 'SELECT * FROM content WHERE 1=1';
+      const params = [];
+      let paramIndex = 1;
 
-// Virtuals
-contentSchema.virtual('fileSizeMB').get(function() {
-  return (this.fileSize / (1024 * 1024)).toFixed(2);
-});
-
-contentSchema.virtual('durationFormatted').get(function() {
-  if (!this.duration) return '0:00';
-  const minutes = Math.floor(this.duration / 60);
-  const seconds = Math.floor(this.duration % 60);
-  return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-});
-
-contentSchema.virtual('age').get(function() {
-  return moment(this.createdAt).fromNow();
-});
-
-// Middleware para atualizar updatedAt
-contentSchema.pre('save', function(next) {
-  this.updatedAt = new Date();
-  next();
-});
-
-// Métodos estáticos
-contentSchema.statics.findByWhatsAppNumber = function(phone, options = {}) {
-  const query = { whatsappNumber: phone };
-  
-  if (options.contentType) {
-    query.contentType = options.contentType;
-  }
-  
-  if (options.dateRange) {
-    query.createdAt = {
-      $gte: options.dateRange.start,
-      $lte: options.dateRange.end
-    };
-  }
-  
-  return this.find(query)
-    .populate('taskId', 'type status priority')
-    .populate('deviceId', 'deviceName model')
-    .sort({ createdAt: -1 });
-};
-
-contentSchema.statics.getContentStats = async function(deviceId = null, dateRange = null) {
-  const match = {};
-  
-  if (deviceId) {
-    match.deviceId = deviceId;
-  }
-  
-  if (dateRange) {
-    match.createdAt = {
-      $gte: dateRange.start,
-      $lte: dateRange.end
-    };
-  }
-  
-  return this.aggregate([
-    { $match: match },
-    {
-      $group: {
-        _id: '$contentType',
-        count: { $sum: 1 },
-        totalSize: { $sum: '$fileSize' },
-        avgSize: { $avg: '$fileSize' }
+      if (conditions.contentId) {
+        sql += ` AND content_id = $${paramIndex}`;
+        params.push(conditions.contentId);
+        paramIndex++;
       }
-    },
-    { $sort: { count: -1 } }
-  ]);
-};
 
-contentSchema.statics.getStorageUsage = async function() {
-  const stats = await this.aggregate([
-    {
-      $group: {
-        _id: null,
-        totalFiles: { $sum: 1 },
-        totalSize: { $sum: '$fileSize' },
-        avgSize: { $avg: '$fileSize' }
+      if (conditions.deviceId) {
+        sql += ` AND device_id = $${paramIndex}`;
+        params.push(conditions.deviceId);
+        paramIndex++;
       }
+
+      if (conditions.whatsappNumber) {
+        sql += ` AND whatsapp_number = $${paramIndex}`;
+        params.push(conditions.whatsappNumber);
+        paramIndex++;
+      }
+
+      if (conditions.contentType) {
+        sql += ` AND content_type = $${paramIndex}`;
+        params.push(conditions.contentType);
+        paramIndex++;
+      }
+
+      sql += ' ORDER BY created_at DESC LIMIT 1';
+
+      const result = await query(sql, params);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao buscar content:', error);
+      throw error;
     }
-  ]);
-  
-  return stats[0] || { totalFiles: 0, totalSize: 0, avgSize: 0 };
-};
-
-// Métodos de instância
-contentSchema.methods.markAsProcessed = function() {
-  this.processingStatus = 'completed';
-  return this.save();
-};
-
-contentSchema.methods.markAsFailed = function(error = null) {
-  this.processingStatus = 'failed';
-  if (error) {
-    this.metadata.error = error;
   }
-  return this.save();
-};
 
-contentSchema.methods.softDelete = function() {
-  this.deletedAt = new Date();
-  this.processingStatus = 'deleted';
-  return this.save();
-};
+  static async create(contentData) {
+    try {
+      const {
+        contentId = `content_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        taskId,
+        deviceId,
+        whatsappNumber,
+        contentType,
+        action,
+        fileName,
+        originalName,
+        filePath,
+        fileSize,
+        mimeType,
+        fileExtension,
+        dimensions = {},
+        duration = 0,
+        messageContent,
+        metadata = {},
+        processingStatus = 'pending',
+        fileHash,
+        tags = [],
+        contentRating = 'safe',
+        isPrivate = false,
+        accessLevel = 'device_only',
+        usageStats = { views: 0, downloads: 0, shares: 0 },
+        backupInfo = { backedUp: false }
+      } = contentData;
 
-contentSchema.methods.incrementViews = function() {
-  this.usageStats.views += 1;
-  return this.save();
-};
+      const sql = `
+        INSERT INTO content (
+          content_id, task_id, device_id, whatsapp_number, content_type, action,
+          file_name, original_name, file_path, file_size, mime_type, file_extension,
+          dimensions, duration, message_content, metadata, processing_status,
+          file_hash, tags, content_rating, is_private, access_level, usage_stats,
+          backup_info, created_at, updated_at
+        ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), NOW())
+        RETURNING *
+      `;
 
-contentSchema.methods.incrementDownloads = function() {
-  this.usageStats.downloads += 1;
-  return this.save();
-};
+      const params = [
+        contentId,
+        taskId,
+        deviceId,
+        whatsappNumber,
+        contentType,
+        action,
+        fileName,
+        originalName,
+        filePath,
+        fileSize,
+        mimeType,
+        fileExtension,
+        JSON.stringify(dimensions),
+        duration,
+        messageContent,
+        JSON.stringify(metadata),
+        processingStatus,
+        fileHash,
+        JSON.stringify(tags),
+        contentRating,
+        isPrivate,
+        accessLevel,
+        JSON.stringify(usageStats),
+        JSON.stringify(backupInfo)
+      ];
 
-module.exports = mongoose.model('Content', contentSchema); 
+      const result = await query(sql, params);
+      return result.rows[0];
+    } catch (error) {
+      console.error('Erro ao criar content:', error);
+      throw error;
+    }
+  }
+
+  static async updateOne(conditions, updateData) {
+    try {
+      let sql = 'UPDATE content SET updated_at = NOW()';
+      const params = [];
+      let paramIndex = 1;
+
+      // Adicionar campos de atualização
+      if (updateData.processingStatus !== undefined) {
+        sql += `, processing_status = $${paramIndex}`;
+        params.push(updateData.processingStatus);
+        paramIndex++;
+      }
+
+      if (updateData.metadata !== undefined) {
+        sql += `, metadata = $${paramIndex}`;
+        params.push(JSON.stringify(updateData.metadata));
+        paramIndex++;
+      }
+
+      if (updateData.usageStats !== undefined) {
+        sql += `, usage_stats = $${paramIndex}`;
+        params.push(JSON.stringify(updateData.usageStats));
+        paramIndex++;
+      }
+
+      if (updateData.deletedAt !== undefined) {
+        sql += `, deleted_at = $${paramIndex}`;
+        params.push(updateData.deletedAt);
+        paramIndex++;
+      }
+
+      // Adicionar condições WHERE
+      sql += ' WHERE 1=1';
+
+      if (conditions.id) {
+        sql += ` AND id = $${paramIndex}`;
+        params.push(conditions.id);
+        paramIndex++;
+      }
+
+      if (conditions.contentId) {
+        sql += ` AND content_id = $${paramIndex}`;
+        params.push(conditions.contentId);
+        paramIndex++;
+      }
+
+      if (conditions.deviceId) {
+        sql += ` AND device_id = $${paramIndex}`;
+        params.push(conditions.deviceId);
+        paramIndex++;
+      }
+
+      sql += ' RETURNING *';
+
+      const result = await query(sql, params);
+      return result.rows[0] || null;
+    } catch (error) {
+      console.error('Erro ao atualizar content:', error);
+      throw error;
+    }
+  }
+
+  static async findByWhatsAppNumber(phone, options = {}) {
+    try {
+      let sql = 'SELECT * FROM content WHERE whatsapp_number = $1';
+      const params = [phone];
+      let paramIndex = 2;
+
+      if (options.contentType) {
+        sql += ` AND content_type = $${paramIndex}`;
+        params.push(options.contentType);
+        paramIndex++;
+      }
+
+      if (options.dateRange) {
+        sql += ` AND created_at BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+        params.push(options.dateRange.start, options.dateRange.end);
+        paramIndex += 2;
+      }
+
+      sql += ' ORDER BY created_at DESC';
+
+      if (options.limit) {
+        sql += ` LIMIT $${paramIndex}`;
+        params.push(options.limit);
+      }
+
+      const result = await query(sql, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar content por WhatsApp:', error);
+      throw error;
+    }
+  }
+
+  static async getContentStats(deviceId = null, dateRange = null) {
+    try {
+      let sql = `
+        SELECT 
+          content_type,
+          COUNT(*) as count,
+          SUM(file_size) as total_size,
+          AVG(file_size) as avg_size
+        FROM content 
+        WHERE 1=1
+      `;
+      const params = [];
+      let paramIndex = 1;
+
+      if (deviceId) {
+        sql += ` AND device_id = $${paramIndex}`;
+        params.push(deviceId);
+        paramIndex++;
+      }
+
+      if (dateRange) {
+        sql += ` AND created_at BETWEEN $${paramIndex} AND $${paramIndex + 1}`;
+        params.push(dateRange.start, dateRange.end);
+        paramIndex += 2;
+      }
+
+      sql += ' GROUP BY content_type ORDER BY count DESC';
+
+      const result = await query(sql, params);
+      return result.rows;
+    } catch (error) {
+      console.error('Erro ao buscar estatísticas de content:', error);
+      throw error;
+    }
+  }
+
+  static async getStorageUsage() {
+    try {
+      const sql = `
+        SELECT 
+          COUNT(*) as total_files,
+          SUM(file_size) as total_size,
+          AVG(file_size) as avg_size
+        FROM content
+      `;
+      const result = await query(sql);
+      return result.rows[0] || { total_files: 0, total_size: 0, avg_size: 0 };
+    } catch (error) {
+      console.error('Erro ao buscar uso de armazenamento:', error);
+      throw error;
+    }
+  }
+
+  static async countDocuments(conditions = {}) {
+    try {
+      let sql = 'SELECT COUNT(*) as count FROM content WHERE 1=1';
+      const params = [];
+      let paramIndex = 1;
+
+      if (conditions.deviceId) {
+        sql += ` AND device_id = $${paramIndex}`;
+        params.push(conditions.deviceId);
+        paramIndex++;
+      }
+
+      if (conditions.contentType) {
+        sql += ` AND content_type = $${paramIndex}`;
+        params.push(conditions.contentType);
+        paramIndex++;
+      }
+
+      if (conditions.processingStatus) {
+        sql += ` AND processing_status = $${paramIndex}`;
+        params.push(conditions.processingStatus);
+        paramIndex++;
+      }
+
+      const result = await query(sql, params);
+      return parseInt(result.rows[0].count);
+    } catch (error) {
+      console.error('Erro ao contar content:', error);
+      throw error;
+    }
+  }
+
+  // Métodos de instância
+  async markAsProcessed() {
+    return await Content.updateOne(
+      { id: this.id },
+      { processingStatus: 'completed' }
+    );
+  }
+
+  async markAsFailed(error = null) {
+    const metadata = this.metadata || {};
+    if (error) {
+      metadata.error = error;
+    }
+    return await Content.updateOne(
+      { id: this.id },
+      { 
+        processingStatus: 'failed',
+        metadata: metadata
+      }
+    );
+  }
+
+  async softDelete() {
+    return await Content.updateOne(
+      { id: this.id },
+      { 
+        deletedAt: new Date(),
+        processingStatus: 'deleted'
+      }
+    );
+  }
+
+  async incrementViews() {
+    const usageStats = this.usage_stats || { views: 0, downloads: 0, shares: 0 };
+    usageStats.views += 1;
+    return await Content.updateOne(
+      { id: this.id },
+      { usageStats: usageStats }
+    );
+  }
+
+  async incrementDownloads() {
+    const usageStats = this.usage_stats || { views: 0, downloads: 0, shares: 0 };
+    usageStats.downloads += 1;
+    return await Content.updateOne(
+      { id: this.id },
+      { usageStats: usageStats }
+    );
+  }
+
+  // Virtuals (propriedades calculadas)
+  get fileSizeMB() {
+    return (this.file_size / (1024 * 1024)).toFixed(2);
+  }
+
+  get durationFormatted() {
+    if (!this.duration) return '0:00';
+    const minutes = Math.floor(this.duration / 60);
+    const seconds = Math.floor(this.duration % 60);
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  }
+
+  get age() {
+    const moment = require('moment');
+    return moment(this.created_at).fromNow();
+  }
+}
+
+module.exports = Content; 
