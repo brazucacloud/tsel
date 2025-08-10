@@ -86,8 +86,8 @@ class Task {
         maxRetries
       ];
 
-      const result = await query(sql, params);
-      return result.rows[0];
+      const queryResult = await query(sql, params);
+      return queryResult.rows[0];
     } catch (error) {
       console.error('Erro ao criar task:', error);
       throw error;
