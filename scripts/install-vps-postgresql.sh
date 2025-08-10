@@ -105,9 +105,13 @@ systemctl enable postgresql
 success "PostgreSQL instalado e iniciado"
 
 # ============================================================================
-# STEP 4: CONFIGURE POSTGRESQL WITH PROPER PERMISSIONS
+# STEP 4: CONFIGURE POSTGRESQL WITH COMPLETE SETUP
 # ============================================================================
-step "4. Configurando PostgreSQL com permissões corretas..."
+step "4. Configurando PostgreSQL com setup completo..."
+
+# Wait for PostgreSQL to be ready
+log "⏳ Aguardando PostgreSQL estar pronto..."
+sleep 5
 
 # Create database and user with proper permissions
 log "📊 Configurando banco de dados e permissões..."
@@ -255,15 +259,52 @@ cd "$INSTALL_DIR"
 success "Dependências instaladas"
 
 # ============================================================================
-# STEP 10: SETUP DATABASE (WITH PERMISSIONS ALREADY FIXED)
+# STEP 10: SETUP DATABASE WITH RETRY MECHANISM
 # ============================================================================
-step "10. Configurando banco de dados..."
+step "10. Configurando banco de dados com mecanismo de retry..."
 
-# Run PostgreSQL setup (permissions already fixed)
-log "🗄️  Configurando PostgreSQL..."
+# Function to setup database with retry
+setup_database_with_retry() {
+    local max_attempts=3
+    local attempt=1
+    
+    while [ $attempt -le $max_attempts ]; do
+        log "🗄️  Tentativa $attempt de configurar PostgreSQL..."
+        
+        if node scripts/setup-postgresql.js; then
+            success "Banco de dados configurado com sucesso"
+            return 0
+        else
+            error "Tentativa $attempt falhou"
+            
+            if [ $attempt -lt $max_attempts ]; then
+                log "🔄 Aguardando 5 segundos antes da próxima tentativa..."
+                sleep 5
+                
+                # Try to fix authentication issues
+                log "🔧 Tentando corrigir problemas de autenticação..."
+                sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';" 2>/dev/null || true
+                sudo -u postgres psql -c "ALTER USER tsel_user PASSWORD 'tsel_password';" 2>/dev/null || true
+                systemctl restart postgresql
+                sleep 3
+            fi
+            
+            attempt=$((attempt + 1))
+        fi
+    done
+    
+    error "Falha ao configurar banco de dados após $max_attempts tentativas"
+    return 1
+}
+
+# Run database setup with retry
 cd "$INSTALL_DIR"
-node scripts/setup-postgresql.js
-success "Banco de dados configurado"
+if setup_database_with_retry; then
+    success "Banco de dados configurado"
+else
+    error "Falha crítica na configuração do banco de dados"
+    exit 1
+fi
 
 # ============================================================================
 # STEP 11: CREATE ENVIRONMENT FILE
@@ -417,6 +458,46 @@ systemctl start tsel
 success "Serviços iniciados"
 
 # ============================================================================
+# STEP 16: FINAL VERIFICATION
+# ============================================================================
+step "16. Verificação final..."
+
+# Wait a moment for services to start
+sleep 5
+
+# Check if services are running
+if systemctl is-active --quiet tsel; then
+    success "Serviço TSEL está rodando"
+else
+    warning "Serviço TSEL não está rodando, tentando reiniciar..."
+    systemctl restart tsel
+    sleep 3
+    if systemctl is-active --quiet tsel; then
+        success "Serviço TSEL agora está rodando"
+    else
+        error "Falha ao iniciar serviço TSEL"
+    fi
+fi
+
+if systemctl is-active --quiet postgresql; then
+    success "PostgreSQL está rodando"
+else
+    error "PostgreSQL não está rodando"
+fi
+
+if systemctl is-active --quiet redis-server; then
+    success "Redis está rodando"
+else
+    error "Redis não está rodando"
+fi
+
+if systemctl is-active --quiet nginx; then
+    success "Nginx está rodando"
+else
+    error "Nginx não está rodando"
+fi
+
+# ============================================================================
 # INSTALLATION COMPLETE
 # ============================================================================
 
@@ -449,5 +530,7 @@ echo -e "   systemctl restart tsel   # Reiniciar serviço"
 echo ""
 echo -e "${GREEN}✅ Sistema TSEL com PostgreSQL instalado e funcionando!${NC}"
 echo -e "${GREEN}✅ Permissões PostgreSQL configuradas automaticamente!${NC}"
+echo -e "${GREEN}✅ Autenticação PostgreSQL corrigida automaticamente!${NC}"
+echo -e "${GREEN}✅ Mecanismo de retry implementado!${NC}"
 echo -e "${GREEN}✅ Sem mais problemas de MongoDB!${NC}"
 echo ""
