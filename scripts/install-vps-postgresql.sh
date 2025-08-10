@@ -140,6 +140,26 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO tsel_user;
 GRANT CREATE ON SCHEMA public TO tsel_user;
 EOF
 
+# Configure PostgreSQL authentication
+log "🔐 Configurando autenticação PostgreSQL..."
+
+# Set password for postgres user
+sudo -u postgres psql -c "ALTER USER postgres PASSWORD 'postgres';"
+
+# Configure pg_hba.conf for local authentication
+cat > /tmp/pg_hba_addition << EOF
+# Configuração local para TSEL
+local   all             postgres                                peer
+local   all             tsel_user                               md5
+host    all             postgres        127.0.0.1/32            md5
+host    all             tsel_user       127.0.0.1/32            md5
+host    all             postgres        ::1/128                 md5
+host    all             tsel_user       ::1/128                 md5
+EOF
+
+# Add authentication config to pg_hba.conf
+cat /tmp/pg_hba_addition >> /etc/postgresql/*/main/pg_hba.conf
+
 # Configure PostgreSQL for remote connections
 log "🔧 Configurando acesso remoto..."
 sed -i "s/#listen_addresses = 'localhost'/listen_addresses = '*'/" /etc/postgresql/*/main/postgresql.conf
@@ -147,7 +167,7 @@ echo "host tsel_db tsel_user 0.0.0.0/0 md5" >> /etc/postgresql/*/main/pg_hba.con
 
 # Restart PostgreSQL
 systemctl restart postgresql
-success "PostgreSQL configurado com permissões corretas"
+success "PostgreSQL configurado com permissões e autenticação corretas"
 
 # ============================================================================
 # STEP 5: INSTALL REDIS

@@ -7,7 +7,7 @@ const adminConfig = {
   user: 'postgres',
   host: process.env.POSTGRES_HOST || 'localhost',
   database: 'postgres', // Conectar ao banco padrão primeiro
-  password: '', // Sem senha para postgres local
+  password: null, // Sem senha para postgres local (null em vez de string vazia)
   port: process.env.POSTGRES_PORT || 5432
 };
 
@@ -172,35 +172,78 @@ async function setupPostgreSQL() {
     
     // Primeiro, conectar como postgres para criar banco e usuário
     console.log('🔧 Configurando banco e usuário...');
-    adminPool = new Pool(adminConfig);
-    const adminClient = await adminPool.connect();
     
+    // Tentar conectar sem senha primeiro (configuração padrão Ubuntu)
     try {
-      // Criar banco de dados se não existir
-      await adminClient.query(`
-        SELECT 'CREATE DATABASE tsel_db'
-        WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tsel_db')\gexec
-      `);
+      adminPool = new Pool(adminConfig);
+      const adminClient = await adminPool.connect();
       
-      // Criar usuário se não existir
-      await adminClient.query(`
-        DO \$\$
-        BEGIN
-          IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'tsel_user') THEN
-            CREATE USER tsel_user WITH PASSWORD 'tsel_password';
-          END IF;
-        END
-        \$\$;
-      `);
+      try {
+        // Criar banco de dados se não existir
+        await adminClient.query(`
+          SELECT 'CREATE DATABASE tsel_db'
+          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tsel_db')\gexec
+        `);
+        
+        // Criar usuário se não existir
+        await adminClient.query(`
+          DO \$\$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'tsel_user') THEN
+              CREATE USER tsel_user WITH PASSWORD 'tsel_password';
+            END IF;
+          END
+          \$\$;
+        `);
+        
+        // Conceder permissões
+        await adminClient.query(`
+          GRANT ALL PRIVILEGES ON DATABASE tsel_db TO tsel_user;
+          ALTER USER tsel_user CREATEDB;
+        `);
+        
+      } finally {
+        adminClient.release();
+      }
+    } catch (error) {
+      console.log('⚠️  Tentando conexão alternativa...');
       
-      // Conceder permissões
-      await adminClient.query(`
-        GRANT ALL PRIVILEGES ON DATABASE tsel_db TO tsel_user;
-        ALTER USER tsel_user CREATEDB;
-      `);
+      // Se falhar, tentar com configuração alternativa
+      const altAdminConfig = {
+        ...adminConfig,
+        password: 'postgres' // Tentar senha padrão
+      };
       
-    } finally {
-      adminClient.release();
+      adminPool = new Pool(altAdminConfig);
+      const adminClient = await adminPool.connect();
+      
+      try {
+        // Criar banco de dados se não existir
+        await adminClient.query(`
+          SELECT 'CREATE DATABASE tsel_db'
+          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tsel_db')\gexec
+        `);
+        
+        // Criar usuário se não existir
+        await adminClient.query(`
+          DO \$\$
+          BEGIN
+            IF NOT EXISTS (SELECT FROM pg_user WHERE usename = 'tsel_user') THEN
+              CREATE USER tsel_user WITH PASSWORD 'tsel_password';
+            END IF;
+          END
+          \$\$;
+        `);
+        
+        // Conceder permissões
+        await adminClient.query(`
+          GRANT ALL PRIVILEGES ON DATABASE tsel_db TO tsel_user;
+          ALTER USER tsel_user CREATEDB;
+        `);
+        
+      } finally {
+        adminClient.release();
+      }
     }
     
     // Agora conectar como tsel_user
@@ -259,6 +302,13 @@ async function setupPostgreSQL() {
     if (error.code === '42501') {
       console.log('\n🔧 Para corrigir permissões, execute:');
       console.log('sudo bash scripts/fix-postgresql-permissions.sh');
+    }
+    
+    // Se for erro de autenticação, sugerir verificar configuração
+    if (error.message.includes('password') || error.message.includes('authentication')) {
+      console.log('\n🔧 Para corrigir autenticação, execute:');
+      console.log('sudo -u postgres psql -c "ALTER USER postgres PASSWORD \'postgres\';"');
+      console.log('sudo -u postgres psql -c "ALTER USER tsel_user PASSWORD \'tsel_password\';"');
     }
     
     process.exit(1);
