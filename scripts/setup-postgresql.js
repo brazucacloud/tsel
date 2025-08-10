@@ -164,26 +164,45 @@ ON CONFLICT (key) DO NOTHING;
 `;
 
 async function setupPostgreSQL() {
-  let adminPool = null;
-  let userPool = null;
+  console.log('🚀 Configurando PostgreSQL para TSEL...');
+  
+  let adminPool, userPool;
   
   try {
-    console.log('🚀 Configurando PostgreSQL para TSEL...');
+    // Configuração para conectar como postgres
+    const adminConfig = {
+      host: process.env.POSTGRES_HOST || 'localhost',
+      port: process.env.POSTGRES_PORT || 5432,
+      database: 'postgres',
+      user: 'postgres',
+      password: null // Tentar sem senha primeiro
+    };
     
-    // Primeiro, conectar como postgres para criar banco e usuário
+    // Configuração para conectar como tsel_user
+    const config = {
+      host: process.env.POSTGRES_HOST || 'localhost',
+      port: process.env.POSTGRES_PORT || 5432,
+      database: process.env.POSTGRES_DB || 'tsel_db',
+      user: process.env.POSTGRES_USER || 'tsel_user',
+      password: process.env.POSTGRES_PASSWORD || 'tsel_password'
+    };
+    
     console.log('🔧 Configurando banco e usuário...');
     
-    // Tentar conectar sem senha primeiro (configuração padrão Ubuntu)
+    // Tentar conectar como postgres primeiro
     try {
       adminPool = new Pool(adminConfig);
       const adminClient = await adminPool.connect();
       
       try {
         // Criar banco de dados se não existir
-        await adminClient.query(`
-          SELECT 'CREATE DATABASE tsel_db'
-          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tsel_db')\gexec
+        const dbExists = await adminClient.query(`
+          SELECT 1 FROM pg_database WHERE datname = 'tsel_db'
         `);
+        
+        if (dbExists.rows.length === 0) {
+          await adminClient.query(`CREATE DATABASE tsel_db`);
+        }
         
         // Criar usuário se não existir
         await adminClient.query(`
@@ -219,10 +238,13 @@ async function setupPostgreSQL() {
       
       try {
         // Criar banco de dados se não existir
-        await adminClient.query(`
-          SELECT 'CREATE DATABASE tsel_db'
-          WHERE NOT EXISTS (SELECT FROM pg_database WHERE datname = 'tsel_db')\gexec
+        const dbExists = await adminClient.query(`
+          SELECT 1 FROM pg_database WHERE datname = 'tsel_db'
         `);
+        
+        if (dbExists.rows.length === 0) {
+          await adminClient.query(`CREATE DATABASE tsel_db`);
+        }
         
         // Criar usuário se não existir
         await adminClient.query(`
@@ -307,14 +329,17 @@ async function setupPostgreSQL() {
     // Se for erro de autenticação, sugerir verificar configuração
     if (error.message.includes('password') || error.message.includes('authentication')) {
       console.log('\n🔧 Para corrigir autenticação, execute:');
-      console.log('sudo -u postgres psql -c "ALTER USER postgres PASSWORD \'postgres\';"');
-      console.log('sudo -u postgres psql -c "ALTER USER tsel_user PASSWORD \'tsel_password\';"');
+      console.log('sudo bash scripts/fix-postgresql-auth.sh');
     }
     
-    process.exit(1);
+    throw error;
   } finally {
-    if (adminPool) await adminPool.end();
-    if (userPool) await userPool.end();
+    if (adminPool) {
+      await adminPool.end();
+    }
+    if (userPool) {
+      await userPool.end();
+    }
   }
 }
 
