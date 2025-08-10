@@ -1,10 +1,9 @@
-const mongoose = require('mongoose');
-
-// Middleware para validar ObjectId do MongoDB
+// Middleware para validar ID numérico do PostgreSQL
 const validateObjectId = (req, res, next) => {
   const { id } = req.params;
   
-  if (!mongoose.Types.ObjectId.isValid(id)) {
+  // Validar se é um número inteiro positivo
+  if (!id || isNaN(id) || parseInt(id) <= 0) {
     return res.status(400).json({
       success: false,
       message: 'ID inválido'
@@ -61,7 +60,7 @@ const validateObjectIds = (paramNames) => {
   return (req, res, next) => {
     for (const paramName of paramNames) {
       const id = req.params[paramName];
-      if (id && !mongoose.Types.ObjectId.isValid(id)) {
+      if (id && (isNaN(id) || parseInt(id) <= 0)) {
         return res.status(400).json({
           success: false,
           message: `ID inválido para ${paramName}`
