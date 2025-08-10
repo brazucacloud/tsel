@@ -105,16 +105,40 @@ systemctl enable postgresql
 success "PostgreSQL instalado e iniciado"
 
 # ============================================================================
-# STEP 4: CONFIGURE POSTGRESQL
+# STEP 4: CONFIGURE POSTGRESQL WITH PROPER PERMISSIONS
 # ============================================================================
-step "4. Configurando PostgreSQL..."
+step "4. Configurando PostgreSQL com permissões corretas..."
 
-# Create database and user
-log "📊 Configurando banco de dados..."
-sudo -u postgres psql -c "CREATE DATABASE tsel_db;"
-sudo -u postgres psql -c "CREATE USER tsel_user WITH PASSWORD 'tsel_password';"
-sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE tsel_db TO tsel_user;"
-sudo -u postgres psql -c "ALTER USER tsel_user CREATEDB;"
+# Create database and user with proper permissions
+log "📊 Configurando banco de dados e permissões..."
+sudo -u postgres psql << EOF
+-- Garantir que o banco tsel_db existe
+CREATE DATABASE tsel_db;
+
+-- Garantir que o usuário tsel_user existe
+CREATE USER tsel_user WITH PASSWORD 'tsel_password';
+
+-- Conceder todas as permissões no banco tsel_db
+GRANT ALL PRIVILEGES ON DATABASE tsel_db TO tsel_user;
+ALTER USER tsel_user CREATEDB;
+
+-- Conectar ao banco tsel_db
+\c tsel_db
+
+-- Conceder permissões no schema public
+GRANT ALL ON SCHEMA public TO tsel_user;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO tsel_user;
+GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO tsel_user;
+GRANT ALL PRIVILEGES ON ALL FUNCTIONS IN SCHEMA public TO tsel_user;
+
+-- Configurar permissões padrão para futuras tabelas
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO tsel_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO tsel_user;
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO tsel_user;
+
+-- Dar permissão para criar tabelas
+GRANT CREATE ON SCHEMA public TO tsel_user;
+EOF
 
 # Configure PostgreSQL for remote connections
 log "🔧 Configurando acesso remoto..."
@@ -123,7 +147,7 @@ echo "host tsel_db tsel_user 0.0.0.0/0 md5" >> /etc/postgresql/*/main/pg_hba.con
 
 # Restart PostgreSQL
 systemctl restart postgresql
-success "PostgreSQL configurado"
+success "PostgreSQL configurado com permissões corretas"
 
 # ============================================================================
 # STEP 5: INSTALL REDIS
@@ -211,11 +235,11 @@ cd "$INSTALL_DIR"
 success "Dependências instaladas"
 
 # ============================================================================
-# STEP 10: SETUP DATABASE
+# STEP 10: SETUP DATABASE (WITH PERMISSIONS ALREADY FIXED)
 # ============================================================================
 step "10. Configurando banco de dados..."
 
-# Run PostgreSQL setup
+# Run PostgreSQL setup (permissions already fixed)
 log "🗄️  Configurando PostgreSQL..."
 cd "$INSTALL_DIR"
 node scripts/setup-postgresql.js
@@ -404,5 +428,6 @@ echo -e "   journalctl -u tsel -f    # Ver logs"
 echo -e "   systemctl restart tsel   # Reiniciar serviço"
 echo ""
 echo -e "${GREEN}✅ Sistema TSEL com PostgreSQL instalado e funcionando!${NC}"
+echo -e "${GREEN}✅ Permissões PostgreSQL configuradas automaticamente!${NC}"
 echo -e "${GREEN}✅ Sem mais problemas de MongoDB!${NC}"
 echo ""
